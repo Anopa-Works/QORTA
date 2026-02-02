@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: qorta-backend
+    name: qorta
     env: node
     plan: starter
     buildCommand: npm install
@@ -9,7 +9,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: CORS_ORIGIN
-        value: https://qorta-backend.onrender.com
+        value: https://qorta.onrender.com
       - key: FIREBASE_PROJECT_ID
         sync: false
       - key: FIREBASE_CLIENT_EMAIL

@@ -28,7 +28,7 @@ Render will ask you to provide values for the variables defined in `render.yaml`
 | Variable | Description | Value to Enter |
 | :--- | :--- | :--- |
 | `NODE_ENV` | Environment Mode | `production` (already set) |
-| `CORS_ORIGIN` | Allowed Frontend URL | `https://your-service-name.onrender.com` (Use `*` temporarily if unsure) |
+| `CORS_ORIGIN` | Allowed Frontend URL | `https://qorta.onrender.com` (Use `*` temporarily if unsure) |
 | `FIREBASE_PROJECT_ID` | Project ID | `qorta-production` (or your actual ID) |
 | `FIREBASE_CLIENT_EMAIL` | Service Account Email | Check your `serviceAccountKey.json` or Firebase Console |
 | `FIREBASE_PRIVATE_KEY` | Private Key | Paste the **entire** private key string from your JSON file. Include `-----BEGIN...` and `\n`. |
@@ -36,7 +36,7 @@ Render will ask you to provide values for the variables defined in `render.yaml`
 ## Step 4: Verify Deployment
 
 1.  Wait for the build to complete. The service status will change to **Live**.
-2.  Click the deployment URL (e.g., `https://qorta-backend.onrender.com`).
+2.  Click the deployment URL (e.g., `https://qorta.onrender.com`).
 3.  Append `/health` to verify the API is running: `https://.../health` -> `{"status":"ok"}`.
 4.  Your frontend is served at the root URL.
 
