@@ -119,14 +119,23 @@
             </svg>
         </div>
         <h2 class="success-title">Order Confirmed!</h2>
-        <p class="success-message">Redirecting to order tracking...</p>
-        <button onclick="window.location.href='index.html'"
-            style="margin-top: 24px; padding: 14px 28px; background: var(--color-primary); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: background 0.15s;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M19 12H5M12 19l-7-7 7-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-            Back to Menu
-        </button>
+        <p class="success-message">Your order has been sent to the kitchen.</p>
+
+        <div style="display: flex; gap: 12px; margin-top: 24px; flex-direction: column; width: 100%; max-width: 280px;">
+            <button id="trackOrderBtn"
+                style="padding: 14px 28px; background: var(--color-primary); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                Track Order
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                </svg>
+            </button>
+
+            <button onclick="window.location.href='index.html'"
+                style="padding: 14px 28px; background: white; color: #64748B; border: 2px solid #E2E8F0; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                Back to Home
+            </button>
+        </div>
     </div>
 
     <!-- Header -->

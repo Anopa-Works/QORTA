@@ -208,10 +208,13 @@ async function confirmOrder() {
             successOverlay.classList.add('show');
         }
 
-        // Wait for animation then redirect
-        setTimeout(() => {
-            window.location.href = `track.html?order=${response.data.id}`;
-        }, 1500);
+        // Update the success overlay buttons with the order ID
+        const trackBtn = document.getElementById('trackOrderBtn');
+        if (trackBtn) {
+            trackBtn.onclick = () => window.location.href = `track.html?order=${response.data.id}`;
+        }
+
+        // No auto-redirect - let user choose
 
     } catch (error) {
         console.error('Order failed:', error);

@@ -334,4 +334,13 @@
         padding: var(--spacing-md);
         font-size: var(--font-size-base);
     }
+
+    /* Hide sticky mobile nav on checkout to show Confirm button */
+    .mobile-nav {
+        display: none !important;
+    }
+
+    body {
+        padding-bottom: 0 !important;
+    }
 }
