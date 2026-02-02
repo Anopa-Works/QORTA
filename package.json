@@ -1,0 +1,31 @@
+{
+  "name": "qorta-backend",
+  "version": "1.0.0",
+  "description": "Multi-tenant SaaS backend for restaurant ordering system",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "restaurant",
+    "ordering",
+    "saas",
+    "multi-tenant"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.1",
+    "express": "^4.18.2",
+    "firebase-admin": "^12.0.0",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

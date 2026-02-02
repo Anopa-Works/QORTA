@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QORTA - Order History</title>
+    <meta name="description" content="View your past orders">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/history.css">
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="app-header">
+        <div class="header-content">
+            <a href="index.html" class="back-btn" aria-label="Back">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M15 18l-6-6 6-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+            </a>
+            <h1 class="header-title">Order History</h1>
+            <div style="width: 24px;"></div>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Orders List -->
+        <div id="ordersList" class="orders-list">
+            <!-- Orders loaded dynamically -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: #A0AEC0;">
+                <path
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <h2>No Orders Yet</h2>
+            <p>Your order history will appear here after you place an order.</p>
+            <a href="index.html" class="btn btn-primary">Browse Menu</a>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="js/api.js"></script>
+    <script src="js/history.js"></script>
+</body>
+
+</html>

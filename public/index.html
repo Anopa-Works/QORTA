@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QORTA - Menu</title>
+  <meta name="description" content="Browse our menu and place your order">
+  <link rel="stylesheet" href="css/main.css?v=3">
+  <link rel="stylesheet" href="css/menu.css?v=3">
+  <link rel="stylesheet" href="css/loader.css?v=2">
+  <link rel="stylesheet" href="css/mobile-nav.css">
+
+</head>
+
+<body>
+  <!-- Context Loader (Data-Driven) -->
+  <div id="contextLoader" class="context-loader">
+    <div class="context-loader-content">
+      <h1 class="loader-restaurant-name" id="loaderRestaurantName">Burger Palace</h1>
+      <p class="loader-branding">powered by QORTA</p>
+      <p class="loader-tagline" id="loaderTagline">SPEED | CLARITY | ACCURACY</p>
+    </div>
+  </div>
+
+  <!-- Main Content (Hidden Initially) -->
+  <div id="mainContent" class="main-content" style="opacity: 0;">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-content">
+        <a href="/" class="logo">QORTA</a>
+        <div class="header-actions">
+          <button class="btn-icon" aria-label="Search" onclick="toggleSearch()">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor">
+              <circle cx="9" cy="9" r="6" stroke-width="2" />
+              <path d="M14 14L18 18" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </button>
+          <a href="history.html" class="btn-icon" aria-label="Order History">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor">
+              <path
+                d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h6a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h0a2 2 0 002-2M9 5a2 2 0 012-2h0a2 2 0 012 2"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Search Bar (Hidden by default) -->
+      <div class="search-bar" id="searchBar" style="display: none;">
+        <input type="text" id="searchInput" placeholder="Search menu items..." oninput="searchMenu(this.value)">
+        <button onclick="clearSearch()" class="btn-icon">×</button>
+      </div>
+    </header>
+
+    <main class="container">
+      <!-- Category Navigation -->
+      <nav class="category-nav" id="categoryNav">
+        <button class="category-pill active" data-category="">All</button>
+        <!-- Categories loaded dynamically -->
+      </nav>
+
+      <!-- Featured Section -->
+      <section id="featuredSection">
+        <div class="section-header">
+          <h2 class="section-title">Featured</h2>
+        </div>
+        <div class="menu-grid" id="featuredGrid">
+          <!-- Featured items loaded dynamically -->
+        </div>
+      </section>
+
+      <!-- Menu Sections by Category -->
+      <div id="menuSections">
+        <!-- Menu sections loaded dynamically -->
+      </div>
+    </main>
+
+    <!-- Cart Float Button -->
+    <button class="cart-float hidden" id="cartFloat" onclick="window.location.href='checkout.html'">
+      <div class="cart-count" id="cartCount">0</div>
+      <span>View Order</span>
+      <span class="cart-total" id="cartTotal">$0.00</span>
+    </button>
+  </div>
+
+  <script src="js/api.js?v=3"></script>
+  <script src="js/cart.js?v=3"></script>
+  <script src="js/menu.js?v=3"></script>
+
+  <!-- Mobile Navigation -->
+  <nav class="mobile-nav">
+    <div class="mobile-nav-items">
+      <a href="index.html" class="mobile-nav-item">
+        <div class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            <polyline points="9 22 9 12 15 12 15 22" />
+          </svg>
+        </div>
+        <span>Home</span>
+      </a>
+
+      <a href="checkout.html" class="mobile-nav-item">
+        <div class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="9" cy="21" r="1" />
+            <circle cx="20" cy="21" r="1" />
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+          </svg>
+        </div>
+        <span>Cart</span>
+        <span class="cart-badge hidden" id="mobileCartBadge">0</span>
+      </a>
+
+      <a href="track.html" class="mobile-nav-item">
+        <div class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+        </div>
+        <span>Track</span>
+      </a>
+    </div>
+  </nav>
+
+  </div> <!-- End Main Content -->
+
+  <script src="js/mobile-nav.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,117 @@
+/**
+ * QORTA - Mobile Bottom Navigation
+ */
+
+/* Mobile Navigation Container */
+.mobile-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid #e2e8f0;
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+    display: none;
+    /* Hidden by default, shown on mobile */
+    z-index: 1000;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.mobile-nav-items {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.mobile-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 16px;
+    text-decoration: none;
+    color: #718096;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.2s;
+    border-radius: 12px;
+    position: relative;
+    min-width: 70px;
+}
+
+.mobile-nav-item:active {
+    background-color: #f7fafc;
+    transform: scale(0.95);
+}
+
+.mobile-nav-item.active {
+    color: var(--color-primary);
+}
+
+.mobile-nav-item.active .nav-icon {
+    transform: scale(1.1);
+}
+
+.nav-icon {
+    width: 24px;
+    height: 24px;
+    transition: transform 0.2s;
+}
+
+.nav-icon svg {
+    width: 100%;
+    height: 100%;
+    stroke: currentColor;
+}
+
+/* Cart Badge */
+.cart-badge {
+    position: absolute;
+    top: 4px;
+    right: 8px;
+    background: #DC2626;
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 10px;
+    min-width: 18px;
+    text-align: center;
+    line-height: 1.4;
+    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
+}
+
+.cart-badge.hidden {
+    display: none;
+}
+
+/* Show only on mobile */
+@media (max-width: 768px) {
+    .mobile-nav {
+        display: block;
+    }
+
+    /* Add padding to body to account for mobile nav */
+    body {
+        padding-bottom: calc(70px + env(safe-area-inset-bottom));
+    }
+}
+
+/* Smooth appearance animation */
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.mobile-nav {
+    animation: slideUp 0.3s ease-out;
+}
