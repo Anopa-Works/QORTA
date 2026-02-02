@@ -20,14 +20,28 @@ class QortaAPI {
     }
 
     extractTenantSlug() {
+        // Try to get stored slug first (if navigating from a tenant page)
+        const storedSlug = localStorage.getItem('qorta_tenant_slug');
+
         // For localhost development, use the seeded tenant
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            return 'burger-palace';
+            return storedSlug || 'burger-palace';
         }
 
-        // For production: URL format https://qorta.app/{slug}/menu
-        const pathParts = window.location.pathname.split('/').filter(p => p);
-        return pathParts[0] || 'burger-palace';
+        // For production
+        // Handle potential trailing slash/empty parts
+        const pathParts = window.location.pathname.split('/').filter(p => p && p.trim() !== '');
+        const firstPart = pathParts[0];
+
+        // If explicitly at root or a known file (ends in .html), return stored or default
+        if (!firstPart || firstPart.endsWith('.html')) {
+            return storedSlug || 'burger-palace';
+        }
+
+        // Otherwise, the first path part is the tenant slug
+        // Store it for future navigation (like to checkout.html)
+        localStorage.setItem('qorta_tenant_slug', firstPart);
+        return firstPart;
     }
 
     async request(endpoint, options = {}) {

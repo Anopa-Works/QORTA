@@ -37,6 +37,33 @@ async function handleLogin(event) {
         const result = await auth.login(email, password);
 
         if (result.success) {
+            // Fetch associated tenant(s)
+            // Note: In a real multi-tenant system, we'd check which tenants this user belongs to.
+            // Here we'll just fetch the first available tenant to bootstrap the session.
+            try {
+                // We need to use raw fetch here because api.js might rely on the slug we haven't set yet
+                // and /api/tenants is a platform-level route, not tenant-scoped.
+                // However, api.baseUrl is correctly set now.
+                const baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                    ? 'http://localhost:3000'
+                    : window.location.origin;
+
+                const response = await fetch(`${baseUrl}/api/tenants`, {
+                    headers: { 'Authorization': `Bearer ${await result.user.getIdToken()}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.data && data.data.length > 0) {
+                        const tenant = data.data[0];
+                        localStorage.setItem('qorta_tenant_slug', tenant.slug);
+                        console.log('Set tenant session:', tenant.slug);
+                    }
+                }
+            } catch (e) {
+                console.warn('Failed to auto-discover tenant:', e);
+            }
+
             // Redirect to intended page or admin dashboard
             window.location.href = getRedirectUrl();
         } else {
