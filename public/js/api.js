@@ -9,9 +9,11 @@ const BACKEND_URL = 'https://YOUR-RAILWAY-APP-URL.up.railway.app';
 class QortaAPI {
     constructor() {
         // Use environment-based URL
-        this.baseUrl = window.location.hostname === 'localhost'
+        // If on localhost (likely using Live Server on distinct port), default to :3000
+        // Otherwise (production), use the current origin
+        this.baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
             ? 'http://localhost:3000'
-            : BACKEND_URL;
+            : window.location.origin;
 
         // Extract tenant slug from URL
         this.tenantSlug = this.extractTenantSlug();
