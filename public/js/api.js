@@ -3,13 +3,15 @@
  * Handles all communication with the backend
  */
 
+// ⚠️ PRODUCTION CONFIGURATION: Update this with your Railway Backend URL
+const BACKEND_URL = 'https://YOUR-RAILWAY-APP-URL.up.railway.app';
+
 class QortaAPI {
     constructor() {
         // Use environment-based URL
-        // On Railway/Render, backend serves frontend, so use same origin
         this.baseUrl = window.location.hostname === 'localhost'
             ? 'http://localhost:3000'
-            : window.location.origin;
+            : BACKEND_URL;
 
         // Extract tenant slug from URL
         this.tenantSlug = this.extractTenantSlug();
