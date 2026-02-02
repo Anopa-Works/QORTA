@@ -9,8 +9,7 @@ class QortaAPI {
         this.baseUrl = window.location.hostname === 'localhost'
             ? 'http://localhost:3000'
             : (window.location.origin.includes('://api.')
-                ? window.location.origin
-                : window.location.origin.replace('://', '://api.'));
+            : window.location.origin;
 
         // Extract tenant slug from URL
         this.tenantSlug = this.extractTenantSlug();

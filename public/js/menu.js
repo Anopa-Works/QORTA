@@ -365,19 +365,19 @@ function showError(message) {
     const errorDiv = document.createElement('div');
     errorDiv.style.cssText = `
     position: fixed;
-    top: 50 %;
-    left: 50 %;
-    transform: translate(-50 %, -50 %);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     background: white;
     padding: 24px;
-    border - radius: 12px;
-    box - shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-    text - align: center;
-    z - index: 2000;
-    max - width: 400px;
+    border-radius: 12px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    z-index: 2000;
+    max-width: 400px;
     `;
     errorDiv.innerHTML = `
-        < p style = "margin: 0 0 16px; font-size: 16px; color: #DC2626;" > ${message}</p >
+        <p style="margin: 0 0 16px; font-size: 16px; color: #DC2626;">${message}</p>
             <button onclick="location.reload()" class="btn btn-primary">Reload Page</button>
     `;
     document.body.appendChild(errorDiv);
