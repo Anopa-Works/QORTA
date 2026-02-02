@@ -64,6 +64,11 @@ async function handleLogin(event) {
                 console.warn('Failed to auto-discover tenant:', e);
             }
 
+            // Set explicit kitchen flag if redirecting to kitchen
+            if (getRedirectUrl().includes('kitchen.html')) {
+                sessionStorage.setItem('kitchen_access_granted', 'true');
+            }
+
             // Redirect to intended page or admin dashboard
             window.location.href = getRedirectUrl();
         } else {
@@ -83,10 +88,25 @@ async function handleLogin(event) {
 
 // Check if already logged in
 async function checkAuth() {
+    const params = new URLSearchParams(window.location.search);
+    const isReauth = params.get('reauth') === 'true';
+
+    // Ensure session persistence (clears on tab close)
+    await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.SESSION);
+
     await auth.init();
+
     if (auth.isAuthenticated()) {
-        // Already logged in, redirect to intended page
-        window.location.href = getRedirectUrl();
+        if (isReauth) {
+            // Force logout if re-authentication is requested
+            await auth.logout();
+            // Clear API tenant session too
+            localStorage.removeItem('qorta_tenant_slug');
+            sessionStorage.removeItem('kitchen_access_granted');
+        } else {
+            // Already logged in, redirect to intended page
+            window.location.href = getRedirectUrl();
+        }
     }
 }
 

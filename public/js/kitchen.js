@@ -73,8 +73,15 @@ async function init() {
   try {
     const user = await waitForAuth();
 
+    // Check for explicit kitchen access flag (force login session)
+    if (!sessionStorage.getItem('kitchen_access_granted')) {
+      // Force re-authentication even if firebase user exists
+      window.location.href = 'admin-login.html?redirect=kitchen.html&reauth=true';
+      return;
+    }
+
     if (!user) {
-      window.location.href = 'admin-login.html?redirect=kitchen.html';
+      window.location.href = 'admin-login.html?redirect=kitchen.html&reauth=true';
       return;
     }
 
