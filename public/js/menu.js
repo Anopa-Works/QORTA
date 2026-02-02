@@ -344,11 +344,11 @@ function showNotification(message) {
     background: #1A1A1A;
     color: white;
     padding: 12px 20px;
-    border - radius: 8px;
-    font - size: 14px;
-    font - weight: 500;
-    z - index: 1000;
-    box - shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 1000;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     animation: slideIn 0.3s ease;
     `;
     document.body.appendChild(notification);

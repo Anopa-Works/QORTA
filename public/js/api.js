@@ -6,9 +6,9 @@
 class QortaAPI {
     constructor() {
         // Use environment-based URL
+        // On Railway/Render, backend serves frontend, so use same origin
         this.baseUrl = window.location.hostname === 'localhost'
             ? 'http://localhost:3000'
-            : (window.location.origin.includes('://api.')
             : window.location.origin;
 
         // Extract tenant slug from URL
