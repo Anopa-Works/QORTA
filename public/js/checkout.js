@@ -48,7 +48,17 @@ function renderCart() {
         if (checkoutFooter) checkoutFooter.style.display = 'none';
         if (emptyCart) {
             emptyCart.style.display = 'block';
-            setupBrowseMenuListener();
+
+            // Update Browse Menu link to ensure it always has the correct tenant context
+            const browseLink = document.getElementById('browseMenuBtn');
+            if (browseLink) {
+                const slug = (window.api && window.api.tenantSlug) ? window.api.tenantSlug : localStorage.getItem('qorta_tenant_slug');
+                if (slug && slug !== 'burger-palace') {
+                    browseLink.href = `/${slug}`;
+                } else {
+                    browseLink.href = 'index.html';
+                }
+            }
         }
         return;
     }
@@ -63,16 +73,7 @@ function renderCart() {
 
     updatePriceSummary();
 
-    // Update Browse Menu link to ensure it always has the correct tenant context
-    const browseLink = document.getElementById('browseMenuBtn');
-    if (browseLink) {
-        const slug = (window.api && window.api.tenantSlug) ? window.api.tenantSlug : localStorage.getItem('qorta_tenant_slug');
-        if (slug && slug !== 'burger-palace') {
-            browseLink.href = `/${slug}`;
-        } else {
-            browseLink.href = 'index.html';
-        }
-    }
+
 }
 
 
