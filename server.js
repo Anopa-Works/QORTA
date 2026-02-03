@@ -69,7 +69,16 @@ app.use('/api/:slug/auth', authRoutes);
 
 // ================== ERROR HANDLING ==================
 
-// 404 handler
+// SPA Fallback: Serve index.html for any non-API routes
+// This allows paths like /chicken-matty or /admin to be handled by the frontend
+app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) {
+        return next();
+    }
+    res.sendFile(require('path').join(__dirname, 'public', 'index.html'));
+});
+
+// 404 handler (for API only now)
 app.use(notFoundHandler);
 
 // Global error handler
