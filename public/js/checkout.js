@@ -8,6 +8,22 @@ function init() {
     renderCart();
     setupCartListener();
     selectOrderType('dine-in'); // Initialize default
+
+    // Fix Empty Cart "Browse Menu" button to respect tenant
+    const browseBtn = document.getElementById('browseMenuBtn');
+    if (browseBtn) {
+        browseBtn.onclick = () => {
+            const slug = (window.api && window.api.tenantSlug) ? window.api.tenantSlug : 'burger-palace';
+            // If slug is burger-palace, go to root (or index.html)
+            // If strictly burger-palace, we can go to index.html or /burger-palace
+            // But to be safe and consistent with other fixes:
+            if (slug && slug !== 'burger-palace') {
+                window.location.href = `/${slug}`;
+            } else {
+                window.location.href = 'index.html';
+            }
+        };
+    }
 }
 
 // Select order type
