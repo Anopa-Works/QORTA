@@ -18,6 +18,18 @@ const orderRoutes = require('./routes/orders');
 const eventRoutes = require('./routes/events');
 const authRoutes = require('./routes/auth');
 
+// Global Crash Handlers for Debugging
+process.on('uncaughtException', (err) => {
+    console.error('CRITICAL ERROR: Uncaught Exception:', err);
+    // Keep it alive for a moment to flush logs if possible, but generally we should exit
+    process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('CRITICAL ERROR: Unhandled Rejection at:', promise, 'reason:', reason);
+    process.exit(1);
+});
+
 // Initialize Express app
 const app = express();
 
