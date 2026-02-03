@@ -69,8 +69,21 @@ app.use('/api/:slug/auth', authRoutes);
 
 // ================== ERROR HANDLING ==================
 
-// SPA Fallback: Serve index.html for any non-API routes
-// This allows paths like /chicken-matty or /admin to be handled by the frontend
+// Tenant-specific Admin/Kitchen Routes (Serve static files)
+app.get('/:slug/admin', (req, res) => {
+    res.sendFile(require('path').join(__dirname, 'public', 'admin.html'));
+});
+
+app.get('/:slug/kitchen', (req, res) => {
+    res.sendFile(require('path').join(__dirname, 'public', 'kitchen.html'));
+});
+
+app.get('/:slug/login', (req, res) => {
+    res.sendFile(require('path').join(__dirname, 'public', 'admin-login.html'));
+});
+
+// SPA Fallback: Serve index.html for any remaining non-API routes
+// This allows paths like /chicken-matty to be handled by the frontend (menu)
 app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api')) {
         return next();
