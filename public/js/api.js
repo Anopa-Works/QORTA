@@ -20,11 +20,9 @@ class QortaAPI {
     }
 
     extractTenantSlug() {
-        // Try to get stored slug first (if navigating from a tenant page)
-        const storedSlug = localStorage.getItem('qorta_tenant_slug');
-
-        // For localhost development, use the seeded tenant
+        // For localhost development, use the seeded tenant (or stored one)
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            const storedSlug = localStorage.getItem('qorta_tenant_slug');
             return storedSlug || 'burger-palace';
         }
 
@@ -33,12 +31,19 @@ class QortaAPI {
         const pathParts = window.location.pathname.split('/').filter(p => p && p.trim() !== '');
         const firstPart = pathParts[0];
 
-        // If explicitly at root or a known file (ends in .html), return stored or default
-        if (!firstPart || firstPart.endsWith('.html')) {
-            return storedSlug || 'burger-palace';
+        // 1. If at explicit root or index.html, FORCE DEFAULT (ignore stored slug)
+        // This solves the issue of "Chicken Matty overwriting Burger Palace"
+        if (!firstPart || firstPart === 'index.html') {
+            return 'burger-palace';
         }
 
-        // Otherwise, the first path part is the tenant slug
+        // 2. If it's a known non-tenant file (e.g., checkout.html, admin.html), USE STORED SLUG
+        // Because these pages live at root but need context
+        if (firstPart.endsWith('.html')) {
+            return localStorage.getItem('qorta_tenant_slug') || 'burger-palace';
+        }
+
+        // 3. Otherwise, the first path part IS the tenant slug (e.g. /chicken-matty)
         // Store it for future navigation (like to checkout.html)
         localStorage.setItem('qorta_tenant_slug', firstPart);
         return firstPart;
