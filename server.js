@@ -101,18 +101,23 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`
 ╔═══════════════════════════════════════════════════╗
 ║                                                   ║
 ║   QORTA Backend Server                            ║
 ║   Multi-tenant Restaurant Ordering System         ║
 ║                                                   ║
-║   Running on: http://localhost:${PORT}              ║
+║   Running on: http://0.0.0.0:${PORT}              ║
 ║   Environment: ${process.env.NODE_ENV || 'development'}                     ║
 ║                                                   ║
 ╚═══════════════════════════════════════════════════╝
   `);
 });
+
+// Render / Load Balancer Keep-Alive settings
+// Prevents 502 Bad Gateway errors by ensuring Node waits longer than the LB
+server.keepAliveTimeout = 120 * 1000;
+server.headersTimeout = 120 * 1000;
 
 module.exports = app;
