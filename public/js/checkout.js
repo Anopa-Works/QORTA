@@ -308,4 +308,12 @@ function saveOrderToHistory(order) {
     localStorage.setItem(historyKey, JSON.stringify(history));
 }
 
+// Clear cart manually
+function clearCart() {
+    if (confirm('Are you sure you want to clear your cart?')) {
+        cart.clear();
+        renderCart();
+    }
+}
+
 document.addEventListener('DOMContentLoaded', init);

@@ -44,8 +44,19 @@
 
         <!-- Footer -->
         <p class="login-footer">
-            <a href="index.html">← Back to Menu</a>
+            <a href="#" onclick="goBackToMenu(event)">← Back to Menu</a>
         </p>
+        <script>
+            function goBackToMenu(e) {
+                e.preventDefault();
+                const slug = localStorage.getItem('qorta_tenant_slug');
+                if (slug && slug !== 'burger-palace') {
+                    window.location.href = `/${slug}`;
+                } else {
+                    window.location.href = '/';
+                }
+            }
+        </script>
     </main>
 
     <!-- Firebase SDK -->

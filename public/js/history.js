@@ -4,6 +4,24 @@
 
 // Initialize page
 async function init() {
+    // FIX: Rewrite back links to avoid resetting session to Burger Palace
+    // We check API first, then localStorage as fallback
+    const slug = (window.api && window.api.tenantSlug) ? window.api.tenantSlug : localStorage.getItem('qorta_tenant_slug');
+
+    if (slug && slug !== 'burger-palace') {
+        const tenantUrl = `/${slug}`;
+        document.querySelectorAll('a[href="index.html"]').forEach(link => {
+            link.href = tenantUrl;
+            // Remove any other click handlers to ensure href works
+            link.onclick = null;
+        });
+
+        // Also fix the empty state Browse Menu button if it exists
+        document.querySelectorAll('a.btn-primary[href="index.html"]').forEach(link => {
+            link.href = tenantUrl;
+        });
+    }
+
     await loadOrderHistory();
 }
 
