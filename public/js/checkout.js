@@ -72,6 +72,24 @@ function renderCart() {
         orderItemsContainer.innerHTML = items.map((item, index) => createOrderItemHTML(item, index)).join('');
 
     updatePriceSummary();
+
+    // Re-bind Browse Menu button listener to ensure it always has the correct tenant context
+    const browseBtn = document.getElementById('browseMenuBtn');
+    if (browseBtn) {
+        // Cloning the node is a safe way to remove old listeners before adding a new one
+        // to prevent duplicate listeners if renderCart is called multiple times
+        const newBtn = browseBtn.cloneNode(true);
+        browseBtn.parentNode.replaceChild(newBtn, browseBtn);
+
+        newBtn.onclick = () => {
+            const slug = (window.api && window.api.tenantSlug) ? window.api.tenantSlug : localStorage.getItem('qorta_tenant_slug');
+            if (slug && slug !== 'burger-palace') {
+                window.location.href = `/${slug}`;
+            } else {
+                window.location.href = 'index.html';
+            }
+        };
+    }
 }
 
 function createOrderItemHTML(item, index) {
