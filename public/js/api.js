@@ -34,6 +34,7 @@ class QortaAPI {
         // 1. If at explicit root or index.html, FORCE DEFAULT (ignore stored slug)
         // This solves the issue of "Chicken Matty overwriting Burger Palace"
         if (!firstPart || firstPart === 'index.html') {
+            localStorage.setItem('qorta_tenant_slug', 'burger-palace');
             return 'burger-palace';
         }
 

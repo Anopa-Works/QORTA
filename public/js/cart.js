@@ -5,19 +5,24 @@
 
 class Cart {
     constructor() {
+        // Namespace cart by tenant to prevent item leakage
+        // We assume api.js is loaded first and 'api' global exists
+        this.tenantSlug = (window.api && window.api.tenantSlug) ? window.api.tenantSlug : 'burger-palace';
+        this.storageKey = `qorta_cart_${this.tenantSlug}`;
+
         this.items = this.loadFromStorage();
         this.listeners = [];
     }
 
     // Load cart from localStorage
     loadFromStorage() {
-        const stored = localStorage.getItem('qorta_cart');
+        const stored = localStorage.getItem(this.storageKey);
         return stored ? JSON.parse(stored) : [];
     }
 
     // Save cart to localStorage
     saveToStorage() {
-        localStorage.setItem('qorta_cart', JSON.stringify(this.items));
+        localStorage.setItem(this.storageKey, JSON.stringify(this.items));
         this.notifyListeners();
 
         // Dispatch event for mobile nav badge update
