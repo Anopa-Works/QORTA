@@ -97,6 +97,8 @@
     border: 2px solid #E2E8F0;
     transition: border-color 0.15s;
     cursor: pointer;
+    display: flex;
+    flex-direction: column;
 }
 
 .menu-item:hover {
@@ -108,6 +110,7 @@
     height: 200px;
     object-fit: cover;
     background-color: var(--color-background-gray);
+    flex-shrink: 0;
 }
 
 /* Image Placeholder */
@@ -118,6 +121,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
 }
 
 .placeholder-icon {
@@ -127,6 +131,9 @@
 
 .menu-item-content {
     padding: var(--spacing-md);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .menu-item-header {
@@ -159,10 +166,12 @@
     overflow: hidden;
 }
 
+/* Footer pushed to bottom */
 .menu-item-footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    margin-top: auto;
 }
 
 .add-to-cart-btn {

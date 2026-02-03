@@ -30,10 +30,27 @@ const createTenant = async (req, res, next) => {
     }
 };
 
-// Get all tenants
+// Get all tenants (Scoped to Admin)
 const getAllTenants = async (req, res, next) => {
     try {
-        const tenants = await Tenant.findAll();
+        // If user is not authenticated or has no tenantId, return empty
+        if (!req.user || !req.user.tenantId) {
+            return res.json({ success: true, data: [] });
+        }
+
+        // Ideally, we fetch only the tenant this admin belongs to
+        // Since we are moving to single-tenant admin, this list will only ever have 1 item
+        const Tenant = require('../models/Tenant'); // Ensure import
+        const { getDb, COLLECTIONS } = require('../config/firebase'); // Need direct access if model doesn't support getById
+
+        // Since Tenant model doesn't have findById exposed easily as static, let's use the DB or helper
+        const db = getDb();
+        const doc = await db.collection(COLLECTIONS.TENANTS).doc(req.user.tenantId).get();
+
+        let tenants = [];
+        if (doc.exists && doc.data().isActive) {
+            tenants.push(Tenant.fromFirestore(doc));
+        }
 
         res.json({
             success: true,

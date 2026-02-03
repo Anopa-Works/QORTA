@@ -85,9 +85,9 @@ const createOrder = async (req, res, next) => {
 const getOrder = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const order = await Order.findById(id);
+        const order = await Order.findById(req.tenant.id, id);
 
-        if (!order || order.tenantId !== req.tenant.id) {
+        if (!order) {
             return res.status(404).json({
                 success: false,
                 error: 'Order not found'
@@ -175,9 +175,9 @@ const updateOrderStatus = async (req, res, next) => {
         const { id } = req.params;
         const { status, note } = req.body;
 
-        const order = await Order.findById(id);
+        const order = await Order.findById(req.tenant.id, id);
 
-        if (!order || order.tenantId !== req.tenant.id) {
+        if (!order) {
             return res.status(404).json({
                 success: false,
                 error: 'Order not found'
@@ -193,7 +193,7 @@ const updateOrderStatus = async (req, res, next) => {
             });
         }
 
-        const updatedOrder = await Order.updateStatus(id, status, note);
+        const updatedOrder = await Order.updateStatus(req.tenant.id, id, status, note);
 
         // Broadcast to kitchen
         broadcastToKitchen(req.tenant.id, {

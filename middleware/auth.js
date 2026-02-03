@@ -25,12 +25,45 @@ const auth = async (req, res, next) => {
         // Verify the token with Firebase
         const decodedToken = await admin.auth().verifyIdToken(token);
 
-        // Attach user info to request
+        // Attach basic user info
         req.user = {
             uid: decodedToken.uid,
             email: decodedToken.email,
             emailVerified: decodedToken.email_verified
         };
+
+        // Fetch Admin Profile (Tenant Mapping)
+        // We do this lazily or here. Doing it here ensures security early.
+        const db = admin.firestore();
+        const adminDoc = await db.collection('admins').doc(decodedToken.uid).get();
+
+        if (adminDoc.exists) {
+            req.user.tenantId = adminDoc.data().tenantId;
+            req.user.role = adminDoc.data().role;
+        }
+
+        // STRICT TENANT ISOLATION CHECK
+        // If the route has already resolved a tenant (via tenantResolver),
+        // we MUST check if this admin belongs to it.
+        if (req.tenant && req.user.tenantId) {
+            if (req.tenant.id !== req.user.tenantId) {
+                console.warn(`Security Alert: Admin ${req.user.email} (Tenant: ${req.user.tenantId}) tried to access Tenant ${req.tenant.id}`);
+                return res.status(403).json({
+                    error: 'Forbidden',
+                    message: 'You do not have access to this restaurant instance.'
+                });
+            }
+        }
+
+        // If user has no tenantId but is trying to access a tenant route
+        if (req.tenant && !req.user.tenantId) {
+            // Optional: Allow "Super Admins" here if you had them, but for now Strict.
+            // OR: If it's a new signup flow? But we assume pre-seeded admins.
+            return res.status(403).json({
+                error: 'Forbidden',
+                message: 'No restaurant associated with this account.'
+            });
+        }
 
         next();
     } catch (error) {

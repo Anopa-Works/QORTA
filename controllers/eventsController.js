@@ -59,8 +59,8 @@ const orderTrackingStream = async (req, res) => {
     const { id } = req.params;
 
     // Verify order exists and belongs to tenant
-    const order = await Order.findById(id);
-    if (!order || order.tenantId !== req.tenant.id) {
+    const order = await Order.findById(req.tenant.id, id);
+    if (!order) {
         return res.status(404).json({
             success: false,
             error: 'Order not found'

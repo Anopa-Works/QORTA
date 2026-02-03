@@ -33,8 +33,8 @@ async function init() {
     }
 
     try {
-        // Enforce minimum 3-second display time for branding
-        const minWaitPromise = new Promise(resolve => setTimeout(resolve, 3000));
+        // Enforce minimum 2-second display time for branding (max 2.5s requirement)
+        const minWaitPromise = new Promise(resolve => setTimeout(resolve, 2000));
 
         await Promise.all([
             loadCategories(),
@@ -75,63 +75,63 @@ function hideLoader() {
     }
 }
 
-// Load categories
-async function loadCategories() {
-    try {
-        const response = await api.getCategories();
-        categories = response.data || [];
-        renderCategoryNav();
-    } catch (error) {
-        console.error('Failed to load categories:', error);
-        categories = []; // Ensure it's an empty array, not undefined
+// Helper: Retry operation with exponential backoff
+async function retryOperation(operation, maxRetries = 3, delay = 1000) {
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            return await operation();
+        } catch (error) {
+            if (i === maxRetries - 1) throw error;
+            console.warn(`Attempt ${i + 1} failed, retrying in ${delay}ms...`, error);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            delay *= 2; // Exponential backoff
+        }
     }
 }
 
-function renderCategoryNav() {
-    const nav = document.getElementById('categoryNav');
-    nav.innerHTML = '<button class="category-pill active" data-category="" onclick="filterByCategory(\'\')">All</button>';
-
-    categories.forEach(category => {
-        // Skip the "All" category since we add it manually
-        if (category.slug === 'all' || category.name.toLowerCase() === 'all') return;
-
-        const pill = document.createElement('button');
-        pill.className = 'category-pill';
-        pill.textContent = category.name;
-        pill.dataset.category = category.id;
-        pill.onclick = () => filterByCategory(category.id);
-        nav.appendChild(pill);
-    });
+// Load categories with retry
+async function loadCategories() {
+    try {
+        const response = await retryOperation(() => api.getCategories());
+        categories = response.data || [];
+        renderCategoryNav();
+    } catch (error) {
+        console.error('Failed to load categories after retries:', error);
+        categories = [];
+        // Non-critical, can continue without categories (display "All")
+    }
 }
 
-// Load featured items
+// Load featured items with retry
 async function loadFeaturedItems() {
     try {
-        const response = await api.getFeaturedItems();
+        const response = await retryOperation(() => api.getFeaturedItems());
         const featured = response.data;
 
-        if (featured.length === 0) {
-            document.getElementById('featuredSection').style.display = 'none';
+        if (!featured || featured.length === 0) {
+            const section = document.getElementById('featuredSection');
+            if (section) section.style.display = 'none';
             return;
         }
 
         const grid = document.getElementById('featuredGrid');
-        grid.innerHTML = featured.map(item => createMenuItemCard(item, true)).join('');
+        if (grid) grid.innerHTML = featured.map(item => createMenuItemCard(item, true)).join('');
     } catch (error) {
         console.error('Failed to load featured items:', error);
-        document.getElementById('featuredSection').style.display = 'none';
+        const section = document.getElementById('featuredSection');
+        if (section) section.style.display = 'none';
     }
 }
 
-// Load all menu items
+// Load all menu items with retry (Critical)
 async function loadMenuItems() {
     try {
-        const response = await api.getMenu();
+        const response = await retryOperation(() => api.getMenu());
         menuItems = response.data;
         renderMenuByCategory();
     } catch (error) {
         console.error('Failed to load menu items:', error);
-        throw error;
+        throw error; // Critical error, propagate to init
     }
 }
 
@@ -299,7 +299,24 @@ function addToCart(itemId) {
     // For now, add without modifiers (can enhance later)
     cart.addItem(item, 1, []);
 
-    // Visual feedback
+    // Visual feedback on button
+    const btn = document.querySelector(`.menu-item[onclick="addToCart('${item.id}')"] .add-to-cart-btn`) ||
+        event.target.closest('.add-to-cart-btn');
+
+    if (btn) {
+        const originalContent = btn.innerHTML;
+        btn.innerHTML = '✓';
+        btn.style.backgroundColor = 'var(--color-ready)'; // Green
+        btn.disabled = true;
+
+        setTimeout(() => {
+            btn.innerHTML = originalContent;
+            btn.style.backgroundColor = '';
+            btn.disabled = false;
+        }, 1000);
+    }
+
+    // Visual feedback notification
     showNotification(`${item.name} added to cart`);
 
     // Animate cart float
@@ -361,26 +378,50 @@ function showNotification(message) {
 }
 
 // Show error
+// Show error with branded UI
 function showError(message) {
-    const errorDiv = document.createElement('div');
-    errorDiv.style.cssText = `
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: white;
-    padding: 24px;
-    border-radius: 12px;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-    text-align: center;
-    z-index: 2000;
-    max-width: 400px;
+    // Hide standard loader if visible
+    const loader = document.getElementById('contextLoader');
+    if (loader) loader.style.display = 'none';
+
+    // Check if we already have an error container
+    let errorContainer = document.getElementById('errorContainer');
+    if (!errorContainer) {
+        errorContainer = document.createElement('div');
+        errorContainer.id = 'errorContainer';
+        errorContainer.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #F8F9FA;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            padding: 20px;
+            text-align: center;
+        `;
+        document.body.appendChild(errorContainer);
+    }
+
+    errorContainer.innerHTML = `
+        <div style="font-size: 48px; margin-bottom: 20px;">😕</div>
+        <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 12px; color: #111;">Menu temporarily unavailable</h2>
+        <p style="color: #666; margin-bottom: 32px; max-width: 300px; line-height: 1.5;">${message}</p>
+        <button onclick="location.reload()" class="btn btn-primary" style="
+            background: #000;
+            color: white;
+            padding: 16px 32px;
+            border-radius: 100px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        ">Try Again</button>
     `;
-    errorDiv.innerHTML = `
-        <p style="margin: 0 0 16px; font-size: 16px; color: #DC2626;">${message}</p>
-            <button onclick="location.reload()" class="btn btn-primary">Reload Page</button>
-    `;
-    document.body.appendChild(errorDiv);
 }
 
 // Initialize on page load

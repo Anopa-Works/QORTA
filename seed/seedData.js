@@ -219,6 +219,22 @@ const seedData = async () => {
             console.log(`  ✅ Menu Item: ${item.name} - $${item.price.toFixed(2)}`);
         }
 
+        // ================== CREATE ADMIN MAPPING ==================
+        console.log('\n👤 Creating admin mapping...');
+
+        // Note: You must update this UID with your real Firebase Auth UID from the console
+        // or login once and copy it.
+        const exampleAdminUid = 'ADMIN_UID_PLACEHOLDER';
+
+        await db.collection('admins').doc(exampleAdminUid).set({
+            email: 'admin@qorta.com', // Example
+            tenantId: tenantId,
+            role: 'owner',
+            createdAt: new Date()
+        });
+        console.log(`✅ Created Admin mapping for UID: ${exampleAdminUid}`);
+        console.log(`⚠️  IMPORTANT: Go to Firestore > 'admins' > '${exampleAdminUid}' and rename the document ID to your real User UID to log in!`);
+
         console.log('\n✨ Seed completed successfully!');
         console.log(`\n📌 Your tenant slug is: burger-palace`);
         console.log(`   Access menu at: GET /api/burger-palace/menu`);
