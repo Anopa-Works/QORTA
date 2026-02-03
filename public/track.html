@@ -11,6 +11,7 @@
 </head>
 
 <!-- Full Screen Notification Overlay -->
+<!-- Full Screen Notification Overlay -->
 <div id="notificationOverlay" class="notification-overlay">
     <div class="notification-content">
         <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -20,6 +21,40 @@
         <h2 class="notification-title" id="notificationTitle">ORDER UPDATE</h2>
         <p class="notification-message" id="notificationMessage">Your order is being prepared!</p>
         <button class="btn-dismiss" onclick="dismissNotification()">Close</button>
+    </div>
+</div>
+
+<!-- STRICT ORDER READY SCREEN (Initially Hidden) -->
+<div id="orderReadyScreen"
+    style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff; z-index: 10000; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px;">
+    <div
+        style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
+        <!-- TITLE -->
+        <h1
+            style="font-size: 3rem; font-weight: 800; color: #16a34a; margin-bottom: 40px; text-transform: uppercase; letter-spacing: -1px;">
+            ✅ Order Ready
+        </h1>
+
+        <!-- ORDER IDENTIFIER -->
+        <div id="readyOrderNumber"
+            style="font-size: 6rem; font-weight: 900; color: #1a1a1a; margin-bottom: 60px; line-height: 1;">
+            #---
+        </div>
+
+        <!-- INSTRUCTION -->
+        <div
+            style="background: #fef2f2; border: 4px solid #dc2626; border-radius: 20px; padding: 30px; max-width: 90%; width: 100%;">
+            <p style="font-size: 1.5rem; font-weight: 800; color: #dc2626; margin: 0; line-height: 1.4;">
+                🔴 Show this screen at the counter to collect your order
+            </p>
+        </div>
+    </div>
+
+    <!-- STATUS FOOTER -->
+    <div style="padding: 20px; width: 100%; border-top: 1px solid #eee;">
+        <p style="color: #64748b; font-size: 1.1rem; font-weight: 500; margin: 0;">
+            Preparing complete
+        </p>
     </div>
 </div>
 

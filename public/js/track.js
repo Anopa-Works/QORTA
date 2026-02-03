@@ -197,25 +197,42 @@ function renderOrderTracking(trackingData) {
             <span>~${trackingData.estimatedPrepTime || 5} mins</span>`;
 
   } else if (trackingData.status === 'READY') {
-    statusCard.classList.add('ready');
-    statusText.textContent = 'READY';
-    // Icon is SVG in HTML, update it via class or keep existing
-    statusEstimate.innerHTML = `
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#48BB78" stroke-width="2"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            <span style="color: #DC2626; font-weight: 700;">Pick up at ${trackingData.pickupLocation || 'Counter'}</span>`;
+    // STRICT ORDER READY SCREEN
+    const readyScreen = document.getElementById('orderReadyScreen');
+    const mainContainer = document.querySelector('.tracking-container');
+    const readyOrderNumber = document.getElementById('readyOrderNumber');
 
-    if (instructionEl) {
-      instructionEl.style.display = 'block';
+    if (readyScreen && mainContainer) {
+      readyScreen.style.display = 'flex';
+      mainContainer.style.display = 'none';
 
-      // Always use clear collection message
-      instructionEl.textContent = 'Show this screen at the counter to collect your order';
+      // Disable scrolling
+      document.body.style.overflow = 'hidden';
+
+      // Update Order Number
+      if (readyOrderNumber) {
+        readyOrderNumber.textContent = `#${trackingData.orderNumber}`;
+      }
     }
 
-  } else if (trackingData.status === 'COMPLETE') {
+    // Still update underlying elements for consistency
     statusCard.classList.add('ready');
-    statusText.textContent = 'DELIVERED';
-    statusIcon.textContent = '😋';
-    statusEstimate.innerHTML = `<span>Order Verified</span>`;
+    statusText.textContent = 'READY';
+    statusText.style.color = '#DC2626'; // ENFORCE RED
+
+  } else if (trackingData.status === 'COMPLETE') {
+    // STRICT SCREEN PERSISTS FOR COMPLETE AS WELL (or show modified version)
+    // For now, keeping the same Ready screen as it implies "Show to collect"
+    const readyScreen = document.getElementById('orderReadyScreen');
+    const mainContainer = document.querySelector('.tracking-container');
+    const readyOrderNumber = document.getElementById('readyOrderNumber');
+
+    if (readyScreen && mainContainer) {
+      readyScreen.style.display = 'flex';
+      mainContainer.style.display = 'none';
+      document.body.style.overflow = 'hidden';
+      if (readyOrderNumber) readyOrderNumber.textContent = `#${trackingData.orderNumber}`;
+    }
   }
 
   // Timeline
