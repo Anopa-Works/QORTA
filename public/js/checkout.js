@@ -10,20 +10,7 @@ function init() {
     selectOrderType('dine-in'); // Initialize default
 
     // Fix Empty Cart "Browse Menu" button to respect tenant
-    const browseBtn = document.getElementById('browseMenuBtn');
-    if (browseBtn) {
-        browseBtn.onclick = () => {
-            const slug = (window.api && window.api.tenantSlug) ? window.api.tenantSlug : 'burger-palace';
-            // If slug is burger-palace, go to root (or index.html)
-            // If strictly burger-palace, we can go to index.html or /burger-palace
-            // But to be safe and consistent with other fixes:
-            if (slug && slug !== 'burger-palace') {
-                window.location.href = `/${slug}`;
-            } else {
-                window.location.href = 'index.html';
-            }
-        };
-    }
+    // This is now handled in renderCart by updating the href directly
 }
 
 // Select order type
@@ -59,7 +46,10 @@ function renderCart() {
         if (orderItemsContainer) orderItemsContainer.style.display = 'none';
         if (priceSummary) priceSummary.style.display = 'none';
         if (checkoutFooter) checkoutFooter.style.display = 'none';
-        if (emptyCart) emptyCart.style.display = 'block';
+        if (emptyCart) {
+            emptyCart.style.display = 'block';
+            setupBrowseMenuListener();
+        }
         return;
     }
 
@@ -73,24 +63,19 @@ function renderCart() {
 
     updatePriceSummary();
 
-    // Re-bind Browse Menu button listener to ensure it always has the correct tenant context
-    const browseBtn = document.getElementById('browseMenuBtn');
-    if (browseBtn) {
-        // Cloning the node is a safe way to remove old listeners before adding a new one
-        // to prevent duplicate listeners if renderCart is called multiple times
-        const newBtn = browseBtn.cloneNode(true);
-        browseBtn.parentNode.replaceChild(newBtn, browseBtn);
-
-        newBtn.onclick = () => {
-            const slug = (window.api && window.api.tenantSlug) ? window.api.tenantSlug : localStorage.getItem('qorta_tenant_slug');
-            if (slug && slug !== 'burger-palace') {
-                window.location.href = `/${slug}`;
-            } else {
-                window.location.href = 'index.html';
-            }
-        };
+    // Update Browse Menu link to ensure it always has the correct tenant context
+    const browseLink = document.getElementById('browseMenuBtn');
+    if (browseLink) {
+        const slug = (window.api && window.api.tenantSlug) ? window.api.tenantSlug : localStorage.getItem('qorta_tenant_slug');
+        if (slug && slug !== 'burger-palace') {
+            browseLink.href = `/${slug}`;
+        } else {
+            browseLink.href = 'index.html';
+        }
     }
 }
+
+
 
 function createOrderItemHTML(item, index) {
     const itemTotal = (item.unitPrice + item.modifierPrices.reduce((a, b) => a + b, 0)) * item.quantity;
