@@ -55,7 +55,20 @@ async function handleLogin(event) {
                 if (response.ok) {
                     const data = await response.json();
                     if (data.data && data.data.length > 0) {
-                        const tenant = data.data[0];
+                        // Check if we already have a session slug
+                        const storedSlug = localStorage.getItem('qorta_tenant_slug');
+                        let tenant = null;
+
+                        // Try to find the stored tenant in the user's available tenants
+                        if (storedSlug) {
+                            tenant = data.data.find(t => t.slug === storedSlug);
+                        }
+
+                        // If not found or no stored slug, default to first available
+                        if (!tenant) {
+                            tenant = data.data[0];
+                        }
+
                         localStorage.setItem('qorta_tenant_slug', tenant.slug);
                         console.log('Set tenant session:', tenant.slug);
                     }
