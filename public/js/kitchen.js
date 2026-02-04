@@ -106,6 +106,13 @@ async function loadKitchenBoard() {
     renderKitchenBoard();
   } catch (error) {
     console.error('Failed to load kitchen board:', error);
+    // Check for 403 Forbidden - Redirect to Menu
+    if (error.message.includes('Forbidden') || error.message.includes('403') || error.message.includes('access')) {
+      const slug = api.tenantSlug || 'burger-palace';
+      window.location.href = `/${slug}`;
+      return;
+    }
+
     showError(`Unable to load kitchen board. ${error.message || 'Please refresh.'}`);
   }
 }
