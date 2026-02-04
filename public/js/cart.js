@@ -7,7 +7,13 @@ class Cart {
     constructor() {
         // Namespace cart by tenant to prevent item leakage
         // We assume api.js is loaded first and 'api' global exists
-        this.tenantSlug = (window.api && window.api.tenantSlug) ? window.api.tenantSlug : 'burger-palace';
+        if (!window.api || !window.api.tenantSlug) {
+            console.error('CRITICAL: Cart initialized without tenant context.');
+            this.tenantSlug = 'unknown_tenant'; // Fail-safe to avoid crashing, but won't save to a real tenant
+        } else {
+            this.tenantSlug = window.api.tenantSlug;
+        }
+
         this.storageKey = `qorta_cart_${this.tenantSlug}`;
 
         this.items = this.loadFromStorage();

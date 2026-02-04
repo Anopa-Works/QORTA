@@ -111,8 +111,19 @@ app.get('/:slug/track/:id', (req, res) => {
 });
 
 // Main Menu (Tenant Index)
-app.get('/:slug', (req, res) => {
+app.get('/:slug', (req, res, next) => {
+    // Prevent system directories from being treated as slugs
+    const systemPaths = ['api', 'js', 'css', 'images', 'favicon.ico'];
+    if (systemPaths.includes(req.params.slug)) {
+        return next();
+    }
     res.sendFile(require('path').join(__dirname, 'public', 'index.html'));
+});
+
+// Root Path (No Tenant) - Should probably show a landing page or 404
+// WE DO NOT DEFAULT TO ANY RESTAURANT.
+app.get('/', (req, res) => {
+    res.status(404).send('<h1>404 - No Restaurant Selected</h1><p>Please use the full URL provided by the restaurant (e.g., /burger-palace).</p>');
 });
 
 // SPA Fallback: Serve index.html for any remaining non-API routes
