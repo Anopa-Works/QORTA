@@ -20,34 +20,34 @@ class QortaAPI {
     }
 
     extractTenantSlug() {
-        // For localhost development, use the seeded tenant (or stored one)
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            const storedSlug = localStorage.getItem('qorta_tenant_slug');
-            return storedSlug || 'burger-palace';
-        }
+        // NON-NEGOTIABLE: Tenant must be resolved from URL PATH ONLY.
+        // No localStorage. No query params. No defaults.
 
-        // For production
-        // Handle potential trailing slash/empty parts
+        // 1. Get path segments, ignoring empty strings
         const pathParts = window.location.pathname.split('/').filter(p => p && p.trim() !== '');
-        const firstPart = pathParts[0];
 
-        // 1. If at explicit root or index.html, FORCE DEFAULT (ignore stored slug)
-        // This solves the issue of "Chicken Matty overwriting Burger Palace"
-        if (!firstPart || firstPart === 'index.html') {
-            localStorage.setItem('qorta_tenant_slug', 'burger-palace');
-            return 'burger-palace';
+        // 2. First segment is ALWAYS the tenant slug
+        const possibleSlug = pathParts[0];
+
+        // 3. Validation
+        // Ignore known system paths or static files if they somehow got here (though server shouldn't route them)
+        const systemPaths = ['api', 'js', 'css', 'images', 'favicon.ico'];
+
+        if (!possibleSlug || systemPaths.includes(possibleSlug) || possibleSlug.includes('.')) {
+            // CRITICAL: If we are at root "/" or an invalid path, we have NO tenant context.
+            // We cannot default to 'burger-palace'.
+            console.error('CRITICAL: No tenant context found in URL path.');
+            // Only redirect if we are strictly not on a valid tenant
+            if (window.location.pathname === '/' || window.location.pathname === '/index.html') {
+                // Optional: redirect to a specific default or landing page if desired, 
+                // but for now we basically leave it null or let the app handle the "Not Found" state.
+                // The user said: If missing -> show "Restaurant not found" error.
+                return null;
+            }
+            return null;
         }
 
-        // 2. If it's a known non-tenant file (e.g., checkout.html, admin.html), USE STORED SLUG
-        // Because these pages live at root but need context
-        if (firstPart.endsWith('.html')) {
-            return localStorage.getItem('qorta_tenant_slug') || 'burger-palace';
-        }
-
-        // 3. Otherwise, the first path part IS the tenant slug (e.g. /chicken-matty)
-        // Store it for future navigation (like to checkout.html)
-        localStorage.setItem('qorta_tenant_slug', firstPart);
-        return firstPart;
+        return possibleSlug;
     }
 
     async request(endpoint, options = {}) {

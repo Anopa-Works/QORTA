@@ -81,7 +81,7 @@ app.use('/api/:slug/auth', authRoutes);
 
 // ================== ERROR HANDLING ==================
 
-// Tenant-specific Admin/Kitchen Routes (Serve static files)
+// Tenant-specific Pages (Serve static files with context)
 app.get('/:slug/admin', (req, res) => {
     res.sendFile(require('path').join(__dirname, 'public', 'admin.html'));
 });
@@ -92,6 +92,27 @@ app.get('/:slug/kitchen', (req, res) => {
 
 app.get('/:slug/login', (req, res) => {
     res.sendFile(require('path').join(__dirname, 'public', 'admin-login.html'));
+});
+
+app.get('/:slug/checkout', (req, res) => {
+    res.sendFile(require('path').join(__dirname, 'public', 'checkout.html'));
+});
+
+app.get('/:slug/history', (req, res) => {
+    res.sendFile(require('path').join(__dirname, 'public', 'history.html'));
+});
+
+app.get('/:slug/track', (req, res) => {
+    res.sendFile(require('path').join(__dirname, 'public', 'track.html'));
+});
+
+app.get('/:slug/track/:id', (req, res) => {
+    res.sendFile(require('path').join(__dirname, 'public', 'track.html'));
+});
+
+// Main Menu (Tenant Index)
+app.get('/:slug', (req, res) => {
+    res.sendFile(require('path').join(__dirname, 'public', 'index.html'));
 });
 
 // SPA Fallback: Serve index.html for any remaining non-API routes

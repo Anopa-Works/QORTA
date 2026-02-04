@@ -27,14 +27,26 @@ function updateMobileCartBadge() {
 
 // Set active nav item based on current page
 function setActiveMobileNav() {
-    const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-    const navItems = document.querySelectorAll('.mobile-nav-item');
+    const segments = window.location.pathname.split('/').filter(p => p && p.trim() !== '');
+    // Last segment usually: 'checkout', 'history', 'track', or the tenantSlug itself (home)
+    const lastSegment = segments.length > 1 ? segments[segments.length - 1] : 'home';
 
+    // Map URL segments to original hrefs for matching
+    const segmentMap = {
+        'home': 'index.html',
+        'checkout': 'checkout.html',
+        'history': 'history.html',
+        'track': 'track.html'
+    };
+
+    const targetHref = segmentMap[lastSegment] || 'index.html';
+
+    const navItems = document.querySelectorAll('.mobile-nav-item');
     navItems.forEach(item => {
-        const href = item.getAttribute('href');
-        if (href === currentPage ||
-            (currentPage === '' && href === 'index.html') ||
-            (currentPage === '/' && href === 'index.html')) {
+        const href = item.getAttribute('href'); // This might be original 'checkout.html' OR rewritten '/slug/checkout'
+
+        // Check if href matches our target or rewritten version
+        if (href.includes(lastSegment) || (lastSegment === 'home' && (href.endsWith('index.html') || href === '/'))) {
             item.classList.add('active');
         } else {
             item.classList.remove('active');
@@ -47,19 +59,32 @@ function initMobileNav() {
     updateMobileCartBadge();
     setActiveMobileNav();
 
-    // DYNAMIC LINK REWRITING: Fixes "Sticky Session Reset"
-    // If we are on a tenant page (e.g. /chicken-matty), 'Home' links should point to /chicken-matty, NOT index.html
-    if (window.api && window.api.tenantSlug && window.api.tenantSlug !== 'burger-palace') {
+    // DYNAMIC LINK REWRITING: Fixes Context Loss
+    // Every link (Home, Checkout, Track, History) must include the current tenant slug.
+    if (window.api && window.api.tenantSlug) {
         const slug = window.api.tenantSlug;
-        const tenantHomeUrl = `/${slug}`;
 
-        // 1. Rewrite Mobile Nav "Home"
-        document.querySelectorAll('a[href="index.html"], a[href="/"], .logo').forEach(link => {
-            // Only rewrite if it's actually a home link
-            if (link.getAttribute('href') === 'index.html' || link.getAttribute('href') === '/') {
-                link.href = tenantHomeUrl;
+        const rewriteMap = {
+            'index.html': `/${slug}`,
+            '/': `/${slug}`,
+            'checkout.html': `/${slug}/checkout`,
+            'history.html': `/${slug}/history`,
+            'track.html': `/${slug}/track`
+        };
+
+        // Rewrite Mobile Nav Links
+        document.querySelectorAll('.mobile-nav-item, .logo, .btn-icon, a').forEach(link => {
+            const href = link.getAttribute('href');
+            if (rewriteMap[href]) {
+                link.href = rewriteMap[href];
             }
         });
+
+        // Special handling for the Cart Float Button (which uses onclick)
+        const cartFloat = document.getElementById('cartFloat');
+        if (cartFloat) {
+            cartFloat.onclick = () => window.location.href = `/${slug}/checkout`;
+        }
     }
 
     // Update cart badge when storage changes (e.g., from another tab or cart update)
