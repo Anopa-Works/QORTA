@@ -106,7 +106,7 @@ async function loadKitchenBoard() {
     renderKitchenBoard();
   } catch (error) {
     console.error('Failed to load kitchen board:', error);
-    showError('Unable to load kitchen board. Please refresh.');
+    showError(`Unable to load kitchen board. ${error.message || 'Please refresh.'}`);
   }
 }
 
