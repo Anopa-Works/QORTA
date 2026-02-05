@@ -309,7 +309,8 @@ function updateClock() {
   const time = now.toLocaleTimeString('en-US', {
     hour: '2-digit',
     minute: '2-digit',
-    hour12: false
+    hour12: false,
+    timeZone: 'Africa/Harare'
   });
   const el = document.getElementById('currentTime');
   if (el) el.textContent = time;

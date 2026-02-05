@@ -34,7 +34,7 @@ const seedData = async () => {
                 settings: {
                     taxRate: 0.08,
                     currency: 'USD',
-                    timezone: 'America/New_York'
+                    timezone: 'Africa/Harare'
                 },
                 isActive: true,
                 createdAt: new Date()

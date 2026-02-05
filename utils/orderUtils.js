@@ -99,7 +99,8 @@ const formatOrderForTracking = (order) => {
             time: new Date(entry.timestamp).toLocaleTimeString('en-US', {
                 hour: '2-digit',
                 minute: '2-digit',
-                hour12: false
+                hour12: false,
+                timeZone: 'Africa/Harare'
             })
         })),
         pickupLocation: order.pickupLocation,
