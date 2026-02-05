@@ -30,6 +30,8 @@ async function init() {
             .join(' ');
         const nameEl = document.getElementById('loaderRestaurantName');
         if (nameEl) nameEl.textContent = name;
+        const logoEl = document.getElementById('headerLogo');
+        if (logoEl) logoEl.textContent = name;
     }
 
     try {
@@ -172,6 +174,19 @@ function groupByCategory(items) {
         acc[item.category].push(item);
         return acc;
     }, {});
+}
+
+// Render category filter pills
+function renderCategoryNav() {
+    const nav = document.getElementById('categoryNav');
+    if (!nav) return;
+
+    nav.innerHTML = [
+        `<button class="category-pill active" data-category="" onclick="filterByCategory('')">All</button>`,
+        ...categories
+            .filter(cat => cat.slug !== 'all')
+            .map(cat => `<button class="category-pill" data-category="${cat.id}" onclick="filterByCategory('${cat.id}')">${cat.name}</button>`)
+    ].join('');
 }
 
 // Create menu item card HTML

@@ -10,11 +10,11 @@
   <link rel="stylesheet" href="/css/menu.css?v=4">
   <link rel="stylesheet" href="/css/loader.css?v=4">
   <link rel="stylesheet" href="/css/mobile-nav.css?v=4">
-
 </head>
 
 <body>
-  <!-- Context Loader (Data-Driven) -->
+
+  <!-- Context Loader (covers screen until data is ready) -->
   <div id="contextLoader" class="context-loader">
     <div class="context-loader-content">
       <h1 class="loader-restaurant-name" id="loaderRestaurantName">Loading...</h1>
@@ -23,20 +23,153 @@
     </div>
   </div>
 
-  <!-- ... (rest of the file) ... -->
+  <!-- Main Content (hidden until loader completes) -->
+  <div id="mainContent" class="main-content" style="opacity: 0;">
 
+    <!-- Sticky Header -->
+    <header class="app-header">
+      <div class="header-content">
+        <a href="/" class="logo" id="headerLogo"></a>
+        <div class="header-actions">
+          <button class="btn btn-icon" onclick="toggleSearch()" aria-label="Search">🔍</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Search Bar (hidden by default, toggled by header button) -->
+    <div id="searchBar" class="search-bar" style="display: none;">
+      <input id="searchInput" type="text" placeholder="Search menu…" oninput="searchMenu(this.value)" autocomplete="off">
+      <button class="btn btn-icon" onclick="toggleSearch()" aria-label="Close search">✕</button>
+    </div>
+
+    <!-- Category Filter Pills -->
+    <div class="container">
+      <div id="categoryNav" class="category-nav"></div>
+    </div>
+
+    <!-- Menu Body -->
+    <div class="container">
+
+      <!-- Featured Items -->
+      <section id="featuredSection">
+        <div class="section-header">
+          <h2 class="section-title">Featured</h2>
+        </div>
+        <div id="featuredGrid" class="menu-grid"></div>
+      </section>
+
+      <!-- Category Sections (rendered by menu.js) -->
+      <div id="menuSections"></div>
+
+    </div>
+
+  </div><!-- /mainContent -->
+
+  <!-- Cart Float (fixed bottom, visible when cart has items) -->
+  <div id="cartFloat" class="cart-float hidden" style="display: none;" onclick="openCheckoutModal()">
+    <span class="cart-count" id="cartCount">0</span>
+    <span class="cart-total" id="cartTotal">$0.00</span>
+  </div>
+
+  <!-- Checkout Modal -->
+  <div id="checkoutModal" class="modal-overlay" style="display: none;" onclick="if(event.target===this)closeCheckoutModal()">
+    <div class="modal-content">
+
+      <div class="checkout-header">
+        <button class="back-btn" onclick="closeCheckoutModal()">← Back</button>
+        <h2 class="checkout-title">Your Order</h2>
+        <button class="clear-cart-btn" onclick="cart.clear()">Clear</button>
+      </div>
+
+      <div class="checkout-body">
+        <!-- Order type toggle -->
+        <div class="order-options">
+          <p class="options-title">Order Type</p>
+          <div class="order-type-buttons">
+            <button class="order-type-btn active" data-type="dine-in" onclick="selectOrderType('dine-in')">Dine In</button>
+            <button class="order-type-btn" data-type="takeout" onclick="selectOrderType('takeout')">Takeout</button>
+          </div>
+        </div>
+
+        <!-- Table number (dine-in only) -->
+        <div id="tableSection" class="table-input-section">
+          <label class="input-label" for="tableNumber">Table Number</label>
+          <input id="tableNumber" class="table-input" type="number" placeholder="e.g. 5" min="1">
+        </div>
+
+        <!-- Customer name -->
+        <div class="customer-name-section">
+          <label class="input-label" for="customerName">Name</label>
+          <input id="customerName" class="text-input" type="text" placeholder="Your name">
+        </div>
+
+        <!-- Items list (rendered by cart.js) -->
+        <div id="orderItemsContainer"></div>
+
+        <!-- Totals -->
+        <div class="price-summary">
+          <div class="price-row"><span>Subtotal</span><span id="checkoutSubtotal">$0.00</span></div>
+          <div class="price-row"><span>Tax (8%)</span><span id="checkoutTax">$0.00</span></div>
+          <div class="price-row total"><span>Total</span><span id="checkoutTotal">$0.00</span></div>
+        </div>
+      </div>
+
+      <div class="checkout-footer">
+        <button id="confirmOrderBtn" class="confirm-btn" onclick="confirmOrder()">Confirm Order</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Order Success Overlay -->
+  <div id="successOverlay" class="success-overlay">
+    <div class="success-checkmark">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+    </div>
+    <h2 class="success-title">Order Placed!</h2>
+    <p style="color: #718096;">Taking you to your order…</p>
+  </div>
+
+  <!-- Mobile Bottom Navigation -->
+  <nav class="mobile-nav">
+    <div class="mobile-nav-items">
+      <a href="/" class="mobile-nav-item active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+        </span>
+        Menu
+      </a>
+      <a href="checkout.html" class="mobile-nav-item" style="position: relative;">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+          </svg>
+        </span>
+        <span id="mobileCartBadge" class="cart-badge hidden">0</span>
+        Cart
+      </a>
+      <a href="track.html" class="mobile-nav-item">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </span>
+        Track
+      </a>
+    </div>
+  </nav>
+
+  <!-- Scripts (load order matters: api → cart → menu → mobile-nav) -->
   <script src="/js/api.js?v=4"></script>
   <script src="/js/cart.js?v=4"></script>
   <script src="/js/menu.js?v=4"></script>
-
-  <!-- Mobile Navigation -->
-  <nav class="mobile-nav">
-    <!-- ... -->
-  </nav>
-
-  </div> <!-- End Main Content -->
-
   <script src="/js/mobile-nav.js?v=4"></script>
-</body>
 
+</body>
 </html>
