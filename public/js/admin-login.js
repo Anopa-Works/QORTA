@@ -16,6 +16,21 @@ function getRedirectUrl() {
     return 'admin.html';
 }
 
+// Map raw auth errors to calm, neutral messages
+function getFriendlyError(error) {
+    const msg = (error || '').toLowerCase();
+    if (msg.includes('wrong-password') || msg.includes('user-not-found') || msg.includes('invalid-credential') || msg.includes('invalid-email')) {
+        return 'Incorrect email or password.';
+    }
+    if (msg.includes('user-disabled') || msg.includes('access-denied')) {
+        return "You don't have access to this restaurant.";
+    }
+    if (msg.includes('too-many-requests')) {
+        return 'Too many attempts. Please try again later.';
+    }
+    return 'Incorrect email or password.';
+}
+
 // Handle login form submission
 async function handleLogin(event) {
     event.preventDefault();
@@ -31,7 +46,7 @@ async function handleLogin(event) {
 
     // Disable button and show loading
     loginBtn.disabled = true;
-    loginBtn.innerHTML = '<span class="spinner"></span> Signing in...';
+    loginBtn.innerHTML = '<span class="spinner"></span> Logging in...';
 
     try {
         const result = await auth.login(email, password);
@@ -82,20 +97,24 @@ async function handleLogin(event) {
                 sessionStorage.setItem('kitchen_access_granted', 'true');
             }
 
-            // Redirect to intended page or admin dashboard
-            window.location.href = getRedirectUrl();
+            // Brief success pulse before redirect
+            const circle = document.getElementById('successCircle');
+            if (circle) circle.classList.add('pop');
+            setTimeout(() => {
+                window.location.href = getRedirectUrl();
+            }, 600);
         } else {
             // Show error
-            errorMessage.textContent = result.error;
+            errorMessage.textContent = getFriendlyError(result.error);
             errorMessage.style.display = 'block';
             loginBtn.disabled = false;
-            loginBtn.innerHTML = 'Sign In';
+            loginBtn.innerHTML = 'Log in';
         }
     } catch (error) {
-        errorMessage.textContent = 'An unexpected error occurred. Please try again.';
+        errorMessage.textContent = 'Something went wrong. Please try again.';
         errorMessage.style.display = 'block';
         loginBtn.disabled = false;
-        loginBtn.innerHTML = 'Sign In';
+        loginBtn.innerHTML = 'Log in';
     }
 }
 

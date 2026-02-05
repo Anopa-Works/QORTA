@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QORTA Admin - Login</title>
+    <title>QORTA Admin Login</title>
     <meta name="description" content="Admin login for QORTA restaurant management">
     <base href="/">
     <link rel="stylesheet" href="css/main.css">
@@ -13,48 +13,85 @@
 
 <body>
     <main class="login-container">
-        <!-- Logo -->
-        <div class="login-logo">
+
+        <!-- Brand -->
+        <div class="login-brand">
             <h1>QORTA</h1>
-            <p class="login-subtitle">Restaurant Admin</p>
+            <p class="brand-subtitle">Admin Login</p>
         </div>
 
-        <!-- Login Form -->
-        <form id="loginForm" class="login-form" onsubmit="handleLogin(event)">
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" placeholder="admin@restaurant.com" required
-                    autocomplete="email">
+        <!-- Form Card -->
+        <div class="login-card">
+            <div class="card-header">
+                <p class="card-primary">Manage orders for your restaurant.</p>
+                <p class="card-supporting">Log in to view incoming orders, update order status, and manage your menu in real time.</p>
             </div>
 
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" placeholder="••••••••" required
-                    autocomplete="current-password">
-            </div>
+            <form id="loginForm" class="login-form" onsubmit="handleLogin(event)">
 
-            <!-- Error Message -->
-            <div id="errorMessage" class="error-message" style="display: none;"></div>
+                <div class="form-group">
+                    <label for="email">Email address</label>
+                    <input type="email" id="email" name="email" placeholder="you@email.com" required
+                        autocomplete="email">
+                </div>
 
-            <!-- Submit Button -->
-            <button type="submit" class="btn btn-primary login-btn" id="loginBtn">
-                Sign In
-            </button>
-        </form>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="password" name="password" placeholder="••••••••" required
+                            autocomplete="current-password" oninput="validatePassword()">
+                        <button type="button" class="show-btn" onclick="togglePasswordVisibility()">Show</button>
+                    </div>
+
+                    <!-- Real-time validation badges -->
+                    <div class="validation-badges">
+                        <span class="vbadge" id="badge-length"><span class="vcheck">✓</span> Minimum 8 characters</span>
+                        <span class="vbadge" id="badge-upper"><span class="vcheck">✓</span> 1 uppercase</span>
+                        <span class="vbadge" id="badge-special"><span class="vcheck">✓</span> Atleast 1 special character</span>
+                    </div>
+                </div>
+
+                <!-- Error Message -->
+                <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+                <!-- Submit -->
+                <button type="submit" class="login-btn" id="loginBtn">Log in</button>
+            </form>
+
+            <p class="staff-note">This login is for restaurant staff only.</p>
+            <p class="forgot-password">Forgot password?</p>
+        </div>
+
+        <!-- Success Checkmark Circle -->
+        <div class="success-circle" id="successCircle">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+        </div>
 
         <!-- Footer -->
-        <p class="login-footer">
-            <a href="#" onclick="goBackToMenu(event)">← Back to Menu</a>
-        </p>
+        <p class="login-footer">Powered by QORTA</p>
+
         <script>
-            function goBackToMenu(e) {
-                e.preventDefault();
-                const slug = localStorage.getItem('qorta_tenant_slug');
-                if (slug) {
-                    window.location.href = `/${slug}`;
-                } else {
-                    window.location.href = '/';
-                }
+            function togglePasswordVisibility() {
+                const input = document.getElementById('password');
+                const btn = document.querySelector('.show-btn');
+                const isPassword = input.type === 'password';
+                input.type = isPassword ? 'text' : 'password';
+                btn.textContent = isPassword ? 'Hide' : 'Show';
+            }
+
+            function validatePassword() {
+                const val = document.getElementById('password').value;
+                const rules = [
+                    { id: 'badge-length', test: val.length >= 8 },
+                    { id: 'badge-upper', test: /[A-Z]/.test(val) },
+                    { id: 'badge-special', test: /[^A-Za-z0-9]/.test(val) }
+                ];
+                rules.forEach(({ id, test }) => {
+                    document.getElementById(id).classList.toggle('met', test);
+                });
             }
         </script>
     </main>
