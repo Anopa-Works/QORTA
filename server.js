@@ -94,10 +94,6 @@ app.get('/:slug/login', (req, res) => {
     res.sendFile(require('path').join(__dirname, 'public', 'admin-login.html'));
 });
 
-app.get('/:slug/checkout', (req, res) => {
-    res.sendFile(require('path').join(__dirname, 'public', 'checkout.html'));
-});
-
 app.get('/:slug/history', (req, res) => {
     res.sendFile(require('path').join(__dirname, 'public', 'history.html'));
 });

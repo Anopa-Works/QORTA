@@ -77,11 +77,77 @@
     </main>
 
     <!-- Cart Float Button -->
-    <button class="cart-float hidden" id="cartFloat" onclick="window.location.href='checkout.html'">
+    <button class="cart-float hidden" id="cartFloat" onclick="openCheckoutModal()">
       <div class="cart-count" id="cartCount">0</div>
       <span>View Order</span>
       <span class="cart-total" id="cartTotal">$0.00</span>
     </button>
+  </div>
+
+  <!-- CHECKOUT MODAL (In-Memory Flow) -->
+  <div id="checkoutModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content checkout-modal-content">
+      <header class="checkout-header">
+        <button class="back-btn" onclick="closeCheckoutModal()">Close</button>
+        <h1 class="checkout-title">Your Order</h1>
+        <button class="clear-cart-btn" onclick="clearCart()">Clear</button>
+      </header>
+
+      <div class="checkout-body">
+        <!-- Order Type Selection -->
+        <div class="order-options">
+          <h3 class="options-title">Order Type</h3>
+          <div class="order-type-buttons">
+            <button class="order-type-btn active" data-type="dine-in" onclick="selectOrderType('dine-in')">Dines
+              In</button>
+            <button class="order-type-btn" data-type="takeaway" onclick="selectOrderType('takeaway')">Takeaway</button>
+          </div>
+        </div>
+
+        <!-- Table Number (for dine-in) -->
+        <div class="table-input-section" id="tableSection">
+          <label for="tableNumber" class="input-label">Table Number <span class="required">*</span></label>
+          <input type="number" id="tableNumber" class="table-input" placeholder="Table #" min="1" max="100">
+          <span class="input-error" id="tableError">Required</span>
+        </div>
+
+        <!-- Customer Name -->
+        <div class="customer-name-section">
+          <label for="customerName" class="input-label">Your Name</label>
+          <input type="text" id="customerName" class="text-input" placeholder="Enter your name">
+        </div>
+
+        <!-- Order Items -->
+        <div class="order-items" id="orderItemsContainer">
+          <!-- Dynamic Items -->
+        </div>
+
+        <!-- Price Summary -->
+        <div class="price-summary">
+          <div class="price-row"><span class="price-label">Subtotal</span><span class="price-value"
+              id="checkoutSubtotal">$0.00</span></div>
+          <div class="price-row"><span class="price-label">Tax (8%)</span><span class="price-value"
+              id="checkoutTax">$0.00</span></div>
+          <div class="price-row total"><span class="price-label total">Total</span><span class="price-value total"
+              id="checkoutTotal">$0.00</span></div>
+        </div>
+      </div>
+
+      <footer class="checkout-footer">
+        <button class="btn btn-primary confirm-btn" id="confirmOrderBtn" onclick="confirmOrder()">Confirm Order</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Success Overlay (In-Page) -->
+  <div class="success-overlay" id="successOverlay">
+    <div class="success-checkmark">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3">
+        <path d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+    <h2 class="success-title">Order Sent!</h2>
+    <p class="success-message">Redirecting to kitchen tracker...</p>
   </div>
 
   <script src="js/api.js?v=3"></script>

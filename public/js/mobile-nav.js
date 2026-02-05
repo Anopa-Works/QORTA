@@ -7,15 +7,11 @@ function updateMobileCartBadge() {
     const cartBadge = document.getElementById('mobileCartBadge');
     if (!cartBadge) return;
 
-    // Use tenant-specific storage key, defaulting to burger-palace if api not ready
-    const tenantSlug = (window.api && window.api.tenantSlug) ? window.api.tenantSlug : 'burger-palace';
-    const storageKey = `qorta_cart_${tenantSlug}`;
-
-    // Fallback: Check if the legacy key has data if the new one is empty? 
-    // No, strictly use namespaced key to prevent leakage.
-
-    const cart = JSON.parse(localStorage.getItem(storageKey) || '[]');
-    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+    // TIER 1 STRICT: Use in-memory cart instance only. No localStorage.
+    let totalItems = 0;
+    if (typeof cart !== 'undefined' && cart.getItemCount) {
+        totalItems = cart.getItemCount();
+    }
 
     if (totalItems > 0) {
         cartBadge.textContent = totalItems > 99 ? '99+' : totalItems;
@@ -25,29 +21,23 @@ function updateMobileCartBadge() {
     }
 }
 
-// Set active nav item based on current page
+// Set active nav item based on current page/modal
 function setActiveMobileNav() {
     const segments = window.location.pathname.split('/').filter(p => p && p.trim() !== '');
-    // Last segment usually: 'checkout', 'history', 'track', or the tenantSlug itself (home)
     const lastSegment = segments.length > 1 ? segments[segments.length - 1] : 'home';
 
-    // Map URL segments to original hrefs for matching
-    const segmentMap = {
-        'home': 'index.html',
-        'checkout': 'checkout.html',
-        'history': 'history.html',
-        'track': 'track.html'
-    };
-
-    const targetHref = segmentMap[lastSegment] || 'index.html';
+    // Simplistic active state
+    // 'home' is active by default on index.html
+    // 'track' is active if on track page
+    // 'cart' is active if modal is open (handled by click listener ideally, but for now we leave it as 'home' usually)
 
     const navItems = document.querySelectorAll('.mobile-nav-item');
     navItems.forEach(item => {
-        const href = item.getAttribute('href'); // This might be original 'checkout.html' OR rewritten '/slug/checkout'
-
-        // Check if href matches our target or rewritten version
-        if (href.includes(lastSegment) || (lastSegment === 'home' && (href.endsWith('index.html') || href === '/'))) {
+        const href = item.getAttribute('href');
+        if (lastSegment === 'track' && href.includes('track')) {
             item.classList.add('active');
+        } else if (lastSegment !== 'track' && (href === 'index.html' || href === '/')) {
+            item.classList.add('active'); // Default to home active
         } else {
             item.classList.remove('active');
         }
@@ -60,14 +50,13 @@ function initMobileNav() {
     setActiveMobileNav();
 
     // DYNAMIC LINK REWRITING: Fixes Context Loss
-    // Every link (Home, Checkout, Track, History) must include the current tenant slug.
     if (window.api && window.api.tenantSlug) {
         const slug = window.api.tenantSlug;
 
         const rewriteMap = {
             'index.html': `/${slug}`,
             '/': `/${slug}`,
-            'checkout.html': `/${slug}/checkout`,
+            // 'checkout.html': `/${slug}/checkout`, // DEPRECATED: Cart is now a modal
             'history.html': `/${slug}/history`,
             'track.html': `/${slug}/track`
         };
@@ -75,22 +64,32 @@ function initMobileNav() {
         // Rewrite Mobile Nav Links
         document.querySelectorAll('.mobile-nav-item, .logo, .btn-icon, a').forEach(link => {
             const href = link.getAttribute('href');
-            if (rewriteMap[href]) {
+
+            // Special Handler for Cart Link (checkout.html) -> Modal OR Redirect to Menu
+            if (href === 'checkout.html') {
+                link.removeAttribute('href'); // Remove nav
+                link.style.cursor = 'pointer';
+                link.onclick = (e) => {
+                    e.preventDefault();
+                    if (typeof openCheckoutModal === 'function') {
+                        openCheckoutModal();
+                    } else {
+                        // If logic for modal doesn't exist (e.g. on track.html), 
+                        // go back to the menu (Home)
+                        window.location.href = `/${slug}`;
+                    }
+                };
+            }
+            // Standard Rewrites
+            else if (rewriteMap[href]) {
                 link.href = rewriteMap[href];
             }
         });
 
-        // Special handling for the Cart Float Button (which uses onclick)
-        const cartFloat = document.getElementById('cartFloat');
-        if (cartFloat) {
-            cartFloat.onclick = () => window.location.href = `/${slug}/checkout`;
-        }
+        // Cart Float Button already handles onclick="openCheckoutModal()" in HTML
     }
 
-    // Update cart badge when storage changes (e.g., from another tab or cart update)
-    window.addEventListener('storage', updateMobileCartBadge);
-
-    // Update cart badge when cart is modified
+    // Update cart badge when cart is modified (using event dispatched by cart.js)
     window.addEventListener('cartUpdated', updateMobileCartBadge);
 }
 
