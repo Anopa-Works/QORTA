@@ -11,8 +11,10 @@ const Category = require('../models/Category');
 // Get all menu items for tenant
 const getMenuItems = async (req, res, next) => {
     try {
-        const { category } = req.query;
-        const options = category ? { category } : {};
+        const { category, includeUnavailable } = req.query;
+        const options = {};
+        if (category) options.category = category;
+        if (includeUnavailable === 'true') options.includeUnavailable = true;
 
         const items = await MenuItem.findByTenant(req.tenant.id, options);
 

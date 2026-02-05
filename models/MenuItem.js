@@ -56,8 +56,11 @@ class MenuItem {
 
         // Filter in memory
         let items = snapshot.docs
-            .map(doc => MenuItem.fromFirestore(doc))
-            .filter(item => item.available);
+            .map(doc => MenuItem.fromFirestore(doc));
+
+        if (!options.includeUnavailable) {
+            items = items.filter(item => item.available);
+        }
 
         if (options.category) {
             items = items.filter(item => item.category === options.category);

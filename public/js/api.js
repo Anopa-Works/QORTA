@@ -124,8 +124,9 @@ class QortaAPI {
     }
 
     // Menu endpoints (public)
-    async getMenu() {
-        return this.request('/menu');
+    async getMenu(params = {}) {
+        const query = new URLSearchParams(params).toString();
+        return this.request(query ? `/menu?${query}` : '/menu');
     }
 
     async getFeaturedItems() {

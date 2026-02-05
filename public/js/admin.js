@@ -74,7 +74,7 @@ function switchTab(tabName) {
 
 async function loadMenuItems() {
     try {
-        const response = await api.getMenu();
+        const response = await api.getMenu({ includeUnavailable: true });
         menuItems = response.data || [];
         renderMenuItems();
     } catch (error) {
