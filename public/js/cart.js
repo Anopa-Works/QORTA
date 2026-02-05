@@ -176,6 +176,18 @@ async function confirmOrder() {
 
         const response = await api.createOrder(orderData);
 
+        // Persist order to history for the Order History page
+        const historyKey = 'qorta_order_history';
+        const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
+        history.unshift({
+            id: response.data.id,
+            orderNumber: response.data.orderNumber,
+            total: response.data.total,
+            itemCount: items.length,
+            createdAt: response.data.createdAt || new Date().toISOString()
+        });
+        localStorage.setItem(historyKey, JSON.stringify(history));
+
         // Success
         document.getElementById('checkoutModal').style.display = 'none';
         const overlay = document.getElementById('successOverlay');

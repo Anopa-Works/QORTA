@@ -3,6 +3,7 @@
  * Server-Sent Events for real-time updates
  */
 
+const admin = require('firebase-admin');
 const Order = require('../models/Order');
 const {
     registerKitchenClient,
@@ -14,15 +15,30 @@ const { formatOrderForKitchen, formatOrderForTracking } = require('../utils/orde
 
 // SSE stream for kitchen board
 const kitchenStream = async (req, res) => {
-    // Set headers for SSE
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no');
+    try {
+        // Verify token from query param (EventSource cannot send custom headers)
+        const { token } = req.query;
+        if (!token) {
+            return res.status(401).json({ success: false, error: 'Authentication required' });
+        }
 
-    // Send initial data
-    const { ORDER_STATUS } = require('../config/constants');
-    const kitchenData = await Order.getKitchenBoard(req.tenant.id);
+        const decodedToken = await admin.auth().verifyIdToken(token);
+        const db = admin.firestore();
+        const adminDoc = await db.collection('admins').doc(decodedToken.uid).get();
+
+        if (!adminDoc.exists || adminDoc.data().tenantId !== req.tenant.id) {
+            return res.status(403).json({ success: false, error: 'Access denied' });
+        }
+
+        // Set headers for SSE
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        res.setHeader('X-Accel-Buffering', 'no');
+
+        // Send initial data
+        const { ORDER_STATUS } = require('../config/constants');
+        const kitchenData = await Order.getKitchenBoard(req.tenant.id);
 
     const initialData = {
         type: 'INITIAL',
@@ -47,25 +63,35 @@ const kitchenStream = async (req, res) => {
         res.write(': heartbeat\n\n');
     }, 30000);
 
-    // Clean up on close
-    req.on('close', () => {
-        clearInterval(heartbeat);
-        unregisterKitchenClient(req.tenant.id, res);
-    });
+        // Clean up on close
+        req.on('close', () => {
+            clearInterval(heartbeat);
+            unregisterKitchenClient(req.tenant.id, res);
+        });
+    } catch (error) {
+        console.error('Kitchen SSE error:', error);
+        if (!res.headersSent) {
+            return res.status(error.code === 'auth/argument-error' ? 401 : 500).json({
+                success: false,
+                error: 'Stream error'
+            });
+        }
+    }
 };
 
 // SSE stream for order tracking
 const orderTrackingStream = async (req, res) => {
-    const { id } = req.params;
+    try {
+        const { id } = req.params;
 
-    // Verify order exists and belongs to tenant
-    const order = await Order.findById(req.tenant.id, id);
-    if (!order) {
-        return res.status(404).json({
-            success: false,
-            error: 'Order not found'
-        });
-    }
+        // Verify order exists and belongs to tenant
+        const order = await Order.findById(req.tenant.id, id);
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                error: 'Order not found'
+            });
+        }
 
     // Set headers for SSE
     res.setHeader('Content-Type', 'text/event-stream');
@@ -89,11 +115,17 @@ const orderTrackingStream = async (req, res) => {
         res.write(': heartbeat\n\n');
     }, 30000);
 
-    // Clean up on close
-    req.on('close', () => {
-        clearInterval(heartbeat);
-        unregisterOrderClient(id, res);
-    });
+        // Clean up on close
+        req.on('close', () => {
+            clearInterval(heartbeat);
+            unregisterOrderClient(id, res);
+        });
+    } catch (error) {
+        console.error('Order tracking SSE error:', error);
+        if (!res.headersSent) {
+            return res.status(500).json({ success: false, error: 'Stream error' });
+        }
+    }
 };
 
 module.exports = {

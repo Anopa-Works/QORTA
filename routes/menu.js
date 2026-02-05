@@ -6,7 +6,7 @@
 const express = require('express');
 const router = express.Router({ mergeParams: true });
 const tenantResolver = require('../middleware/tenantResolver');
-const { auth } = require('../middleware/auth');
+const { auth, optionalAuth } = require('../middleware/auth');
 const { validateRequest } = require('../middleware/validateRequest');
 const {
     getMenuItems,
@@ -23,7 +23,7 @@ router.use(tenantResolver);
 // ================== PUBLIC ROUTES ==================
 
 // Get all menu items (optionally filtered by category)
-router.get('/', getMenuItems);
+router.get('/', optionalAuth, getMenuItems);
 
 // Get featured items
 router.get('/featured', getFeaturedItems);

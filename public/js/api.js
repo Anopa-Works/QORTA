@@ -168,8 +168,8 @@ class QortaAPI {
     }
 
     // Server-Sent Events for real-time updates
-    createKitchenStream(onMessage, onError) {
-        const url = `${this.baseUrl}/api/${this.tenantSlug}/events/kitchen`;
+    createKitchenStream(token, onMessage, onError) {
+        const url = `${this.baseUrl}/api/${this.tenantSlug}/events/kitchen?token=${encodeURIComponent(token)}`;
         const eventSource = new EventSource(url);
 
         eventSource.onmessage = (event) => {

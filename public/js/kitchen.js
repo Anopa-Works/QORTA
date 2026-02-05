@@ -122,14 +122,21 @@ async function loadKitchenBoard() {
 }
 
 // Setup Server-Sent Events for real-time updates
-function setupSSE() {
-  eventSource = api.createKitchenStream(
-    (data) => handleSSEMessage(data),
-    (error) => {
-      console.error('SSE connection error:', error);
-      setTimeout(setupSSE, 5000);
-    }
-  );
+async function setupSSE() {
+  try {
+    const token = await firebase.auth().currentUser.getIdToken();
+    eventSource = api.createKitchenStream(
+      token,
+      (data) => handleSSEMessage(data),
+      (error) => {
+        console.error('SSE connection error:', error);
+        setTimeout(setupSSE, 5000);
+      }
+    );
+  } catch (error) {
+    console.error('Failed to get token for SSE:', error);
+    setTimeout(setupSSE, 5000);
+  }
 }
 
 // Handle SSE messages

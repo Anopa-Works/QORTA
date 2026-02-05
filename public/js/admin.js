@@ -74,7 +74,7 @@ function switchTab(tabName) {
 
 async function loadMenuItems() {
     try {
-        const response = await api.getMenu({ includeUnavailable: true });
+        const response = await api.authRequest('/menu?includeUnavailable=true');
         menuItems = response.data || [];
         renderMenuItems();
     } catch (error) {
@@ -237,14 +237,16 @@ async function updateOrderStatus(orderId, newStatus) {
 // Set up Server-Sent Events for real-time order updates
 let ordersEventSource = null;
 
-function setupOrdersSSE() {
+async function setupOrdersSSE() {
     // Close existing connection if any
     if (ordersEventSource) {
         ordersEventSource.close();
     }
 
     try {
+        const token = await firebase.auth().currentUser.getIdToken();
         ordersEventSource = api.createKitchenStream(
+            token,
             (data) => {
                 // Reload orders when kitchen board updates
                 loadOrders();

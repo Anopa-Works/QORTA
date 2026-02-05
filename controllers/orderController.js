@@ -26,7 +26,7 @@ const createOrder = async (req, res, next) => {
         // Enrich items with menu data
         const enrichedItems = await Promise.all(items.map(async (item) => {
             const menuItem = await MenuItem.findById(item.menuItemId);
-            if (!menuItem) {
+            if (!menuItem || menuItem.tenantId !== req.tenant.id) {
                 throw Object.assign(new Error(`Menu item not found: ${item.menuItemId}`), { code: 'NOT_FOUND' });
             }
 

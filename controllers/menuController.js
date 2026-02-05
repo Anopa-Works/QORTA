@@ -14,7 +14,7 @@ const getMenuItems = async (req, res, next) => {
         const { category, includeUnavailable } = req.query;
         const options = {};
         if (category) options.category = category;
-        if (includeUnavailable === 'true') options.includeUnavailable = true;
+        if (includeUnavailable === 'true' && req.user) options.includeUnavailable = true;
 
         const items = await MenuItem.findByTenant(req.tenant.id, options);
 
@@ -169,6 +169,12 @@ const createCategory = async (req, res, next) => {
 const updateCategory = async (req, res, next) => {
     try {
         const { id } = req.params;
+        const { getDb, COLLECTIONS } = require('../config/firebase');
+        const doc = await getDb().collection(COLLECTIONS.CATEGORIES).doc(id).get();
+        if (!doc.exists || doc.data().tenantId !== req.tenant.id) {
+            return res.status(404).json({ success: false, error: 'Category not found' });
+        }
+
         const category = await Category.update(id, req.body);
 
         res.json({
@@ -184,6 +190,12 @@ const updateCategory = async (req, res, next) => {
 const deleteCategory = async (req, res, next) => {
     try {
         const { id } = req.params;
+        const { getDb, COLLECTIONS } = require('../config/firebase');
+        const doc = await getDb().collection(COLLECTIONS.CATEGORIES).doc(id).get();
+        if (!doc.exists || doc.data().tenantId !== req.tenant.id) {
+            return res.status(404).json({ success: false, error: 'Category not found' });
+        }
+
         await Category.delete(id);
 
         res.json({

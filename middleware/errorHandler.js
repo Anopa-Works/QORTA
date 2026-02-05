@@ -34,8 +34,12 @@ const errorHandler = (err, req, res, next) => {
         });
     }
 
-    // Default to 500
-    res.status(err.status || 500).json(response);
+    // Default to 500 — never send raw error messages to client
+    const status = err.status || 500;
+    res.status(status).json({
+        success: false,
+        error: status === 500 ? 'Internal server error' : (err.message || 'Internal server error')
+    });
 };
 
 // Not found handler for undefined routes

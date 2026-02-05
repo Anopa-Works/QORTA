@@ -19,7 +19,7 @@ router.get('/', auth, getAllTenants);
 // Get tenant by slug
 router.get('/:slug', getTenantBySlug);
 
-// Create new tenant
-router.post('/', validateRequest(['slug', 'name']), createTenant);
+// Create new tenant (requires auth — any authenticated Firebase user may create)
+router.post('/', auth, validateRequest(['slug', 'name']), createTenant);
 
 module.exports = router;
