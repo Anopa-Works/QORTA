@@ -14,20 +14,50 @@ const seedData = async () => {
         const db = getDb();
 
         const tenantSlug = 'chicken-matty';
-        // Check if tenant already exists or fix the ID if we know it
-        // We know the ID is likely LIJevObdz6WlKKncswyd from previous step
-        const tenantId = 'LIJevObdz6WlKKncswyd';
 
-        // ================== VERIFY TENANT ==================
-        console.log('📦 Verifying tenant...');
+        // ================== RESOLVE OR CREATE TENANT ==================
+        console.log('📦 Resolving tenant...');
 
-        const tenantDoc = await db.collection(COLLECTIONS.TENANTS).doc(tenantId).get();
-        if (!tenantDoc.exists) {
-            console.log('⚠️ Tenant not found by ID. Creating or finding by slug...');
-            // Fallback logic could be here but for now assume we need to maybe create or update
+        let tenantId;
+        const existingSnapshot = await db.collection(COLLECTIONS.TENANTS)
+            .where('slug', '==', tenantSlug)
+            .limit(1)
+            .get();
+
+        if (!existingSnapshot.empty) {
+            tenantId = existingSnapshot.docs[0].id;
+            console.log(`✅ Tenant already exists: ${tenantId}`);
         } else {
-            console.log('✅ Tenant found.');
+            const tenantRef = await db.collection(COLLECTIONS.TENANTS).add({
+                slug: tenantSlug,
+                name: 'Chicken Matty',
+                settings: {
+                    taxRate: 0.08,
+                    currency: 'USD',
+                    timezone: 'America/New_York'
+                },
+                isActive: true,
+                createdAt: new Date()
+            });
+            tenantId = tenantRef.id;
+            console.log(`✅ Tenant created: ${tenantId}`);
         }
+
+        // ================== CLEAR EXISTING DATA ==================
+        console.log('🗑️  Clearing existing categories and menu items...');
+
+        const existingCategories = await db.collection(COLLECTIONS.CATEGORIES)
+            .where('tenantId', '==', tenantId).get();
+        for (const doc of existingCategories.docs) {
+            await doc.ref.delete();
+        }
+
+        const existingMenuItems = await db.collection(COLLECTIONS.MENU_ITEMS)
+            .where('tenantId', '==', tenantId).get();
+        for (const doc of existingMenuItems.docs) {
+            await doc.ref.delete();
+        }
+        console.log('  ✅ Cleared\n');
 
         // ================== CREATE CATEGORIES ==================
         console.log('📁 Creating categories...');
@@ -129,7 +159,7 @@ const seedData = async () => {
             },
             {
                 name: 'Chocolate Brownie',
-                description: 'Warm goooy brownie with vanilla ice cream.',
+                description: 'Warm gooey brownie with vanilla ice cream.',
                 price: 6.50,
                 category: 'desserts',
                 isFeatured: false,
