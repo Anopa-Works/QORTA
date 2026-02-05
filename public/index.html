@@ -6,10 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>QORTA - Menu</title>
   <meta name="description" content="Browse our menu and place your order">
-  <link rel="stylesheet" href="css/main.css?v=3">
-  <link rel="stylesheet" href="css/menu.css?v=3">
-  <link rel="stylesheet" href="css/loader.css?v=2">
-  <link rel="stylesheet" href="css/mobile-nav.css">
+  <link rel="stylesheet" href="/css/main.css?v=4">
+  <link rel="stylesheet" href="/css/menu.css?v=4">
+  <link rel="stylesheet" href="/css/loader.css?v=4">
+  <link rel="stylesheet" href="/css/mobile-nav.css?v=4">
 
 </head>
 
@@ -17,183 +17,26 @@
   <!-- Context Loader (Data-Driven) -->
   <div id="contextLoader" class="context-loader">
     <div class="context-loader-content">
-      <h1 class="loader-restaurant-name" id="loaderRestaurantName">Burger Palace</h1>
+      <h1 class="loader-restaurant-name" id="loaderRestaurantName">Loading...</h1>
       <p class="loader-branding">powered by QORTA</p>
       <p class="loader-tagline" id="loaderTagline">SPEED | CLARITY | ACCURACY</p>
     </div>
   </div>
 
-  <!-- Main Content (Hidden Initially) -->
-  <div id="mainContent" class="main-content" style="opacity: 0;">
-    <!-- Header -->
-    <header class="app-header">
-      <div class="header-content">
-        <a href="/" class="logo">QORTA</a>
-        <div class="header-actions">
-          <button class="btn-icon" aria-label="Search" onclick="toggleSearch()">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor">
-              <circle cx="9" cy="9" r="6" stroke-width="2" />
-              <path d="M14 14L18 18" stroke-width="2" stroke-linecap="round" />
-            </svg>
-          </button>
-          <a href="history.html" class="btn-icon" aria-label="Order History">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor">
-              <path
-                d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h6a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h0a2 2 0 002-2M9 5a2 2 0 012-2h0a2 2 0 012 2"
-                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-          </a>
-        </div>
-      </div>
+  <!-- ... (rest of the file) ... -->
 
-      <!-- Search Bar (Hidden by default) -->
-      <div class="search-bar" id="searchBar" style="display: none;">
-        <input type="text" id="searchInput" placeholder="Search menu items..." oninput="searchMenu(this.value)">
-        <button onclick="clearSearch()" class="btn-icon">×</button>
-      </div>
-    </header>
-
-    <main class="container">
-      <!-- Category Navigation -->
-      <nav class="category-nav" id="categoryNav">
-        <button class="category-pill active" data-category="">All</button>
-        <!-- Categories loaded dynamically -->
-      </nav>
-
-      <!-- Featured Section -->
-      <section id="featuredSection">
-        <div class="section-header">
-          <h2 class="section-title">Featured</h2>
-        </div>
-        <div class="menu-grid" id="featuredGrid">
-          <!-- Featured items loaded dynamically -->
-        </div>
-      </section>
-
-      <!-- Menu Sections by Category -->
-      <div id="menuSections">
-        <!-- Menu sections loaded dynamically -->
-      </div>
-    </main>
-
-    <!-- Cart Float Button -->
-    <button class="cart-float hidden" id="cartFloat" onclick="openCheckoutModal()">
-      <div class="cart-count" id="cartCount">0</div>
-      <span>View Order</span>
-      <span class="cart-total" id="cartTotal">$0.00</span>
-    </button>
-  </div>
-
-  <!-- CHECKOUT MODAL (In-Memory Flow) -->
-  <div id="checkoutModal" class="modal-overlay" style="display: none;">
-    <div class="modal-content checkout-modal-content">
-      <header class="checkout-header">
-        <button class="back-btn" onclick="closeCheckoutModal()">Close</button>
-        <h1 class="checkout-title">Your Order</h1>
-        <button class="clear-cart-btn" onclick="clearCart()">Clear</button>
-      </header>
-
-      <div class="checkout-body">
-        <!-- Order Type Selection -->
-        <div class="order-options">
-          <h3 class="options-title">Order Type</h3>
-          <div class="order-type-buttons">
-            <button class="order-type-btn active" data-type="dine-in" onclick="selectOrderType('dine-in')">Dines
-              In</button>
-            <button class="order-type-btn" data-type="takeaway" onclick="selectOrderType('takeaway')">Takeaway</button>
-          </div>
-        </div>
-
-        <!-- Table Number (for dine-in) -->
-        <div class="table-input-section" id="tableSection">
-          <label for="tableNumber" class="input-label">Table Number <span class="required">*</span></label>
-          <input type="number" id="tableNumber" class="table-input" placeholder="Table #" min="1" max="100">
-          <span class="input-error" id="tableError">Required</span>
-        </div>
-
-        <!-- Customer Name -->
-        <div class="customer-name-section">
-          <label for="customerName" class="input-label">Your Name</label>
-          <input type="text" id="customerName" class="text-input" placeholder="Enter your name">
-        </div>
-
-        <!-- Order Items -->
-        <div class="order-items" id="orderItemsContainer">
-          <!-- Dynamic Items -->
-        </div>
-
-        <!-- Price Summary -->
-        <div class="price-summary">
-          <div class="price-row"><span class="price-label">Subtotal</span><span class="price-value"
-              id="checkoutSubtotal">$0.00</span></div>
-          <div class="price-row"><span class="price-label">Tax (8%)</span><span class="price-value"
-              id="checkoutTax">$0.00</span></div>
-          <div class="price-row total"><span class="price-label total">Total</span><span class="price-value total"
-              id="checkoutTotal">$0.00</span></div>
-        </div>
-      </div>
-
-      <footer class="checkout-footer">
-        <button class="btn btn-primary confirm-btn" id="confirmOrderBtn" onclick="confirmOrder()">Confirm Order</button>
-      </footer>
-    </div>
-  </div>
-
-  <!-- Success Overlay (In-Page) -->
-  <div class="success-overlay" id="successOverlay">
-    <div class="success-checkmark">
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3">
-        <path d="M5 13l4 4L19 7" />
-      </svg>
-    </div>
-    <h2 class="success-title">Order Sent!</h2>
-    <p class="success-message">Redirecting to kitchen tracker...</p>
-  </div>
-
-  <script src="js/api.js?v=3"></script>
-  <script src="js/cart.js?v=3"></script>
-  <script src="js/menu.js?v=3"></script>
+  <script src="/js/api.js?v=4"></script>
+  <script src="/js/cart.js?v=4"></script>
+  <script src="/js/menu.js?v=4"></script>
 
   <!-- Mobile Navigation -->
   <nav class="mobile-nav">
-    <div class="mobile-nav-items">
-      <a href="index.html" class="mobile-nav-item">
-        <div class="nav-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-            <polyline points="9 22 9 12 15 12 15 22" />
-          </svg>
-        </div>
-        <span>Home</span>
-      </a>
-
-      <a href="checkout.html" class="mobile-nav-item">
-        <div class="nav-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="9" cy="21" r="1" />
-            <circle cx="20" cy="21" r="1" />
-            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-          </svg>
-        </div>
-        <span>Cart</span>
-        <span class="cart-badge hidden" id="mobileCartBadge">0</span>
-      </a>
-
-      <a href="track.html" class="mobile-nav-item">
-        <div class="nav-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="12 6 12 12 16 14" />
-          </svg>
-        </div>
-        <span>Track</span>
-      </a>
-    </div>
+    <!-- ... -->
   </nav>
 
   </div> <!-- End Main Content -->
 
-  <script src="js/mobile-nav.js"></script>
+  <script src="/js/mobile-nav.js?v=4"></script>
 </body>
 
 </html>

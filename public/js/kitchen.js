@@ -108,8 +108,12 @@ async function loadKitchenBoard() {
     console.error('Failed to load kitchen board:', error);
     // Check for 403 Forbidden - Redirect to Menu
     if (error.message.includes('Forbidden') || error.message.includes('403') || error.message.includes('access')) {
-      const slug = api.tenantSlug || 'burger-palace';
-      window.location.href = `/${slug}`;
+      const slug = api.tenantSlug;
+      if (slug) {
+        window.location.href = `/${slug}`;
+      } else {
+        window.location.href = '/';
+      }
       return;
     }
 

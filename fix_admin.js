@@ -10,7 +10,7 @@ const fixAdmin = async () => {
 
         // 1. Get Arguments
         const myUid = process.argv[2];
-        const targetSlug = process.argv[3] || 'burger-palace';
+        const targetSlug = process.argv[3];
 
         if (!myUid) {
             console.error('❌ Error: Missing UID.');

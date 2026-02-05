@@ -8,7 +8,7 @@ async function init() {
     // We check API first, then localStorage as fallback
     const slug = (window.api && window.api.tenantSlug) ? window.api.tenantSlug : localStorage.getItem('qorta_tenant_slug');
 
-    if (slug && slug !== 'burger-palace') {
+    if (slug) {
         const tenantUrl = `/${slug}`;
         document.querySelectorAll('a[href="index.html"]').forEach(link => {
             link.href = tenantUrl;

@@ -50,7 +50,7 @@
             function goBackToMenu(e) {
                 e.preventDefault();
                 const slug = localStorage.getItem('qorta_tenant_slug');
-                if (slug && slug !== 'burger-palace') {
+                if (slug) {
                     window.location.href = `/${slug}`;
                 } else {
                     window.location.href = '/';
