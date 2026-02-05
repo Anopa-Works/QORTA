@@ -2,18 +2,17 @@
  * QORTA Frontend - Admin Login Page Logic
  */
 
-// Get redirect URL from query params or default to admin
+// Build a tenant-scoped redirect URL from the ?redirect param
 function getRedirectUrl() {
     const params = new URLSearchParams(window.location.search);
     const redirect = params.get('redirect');
+    const slug = localStorage.getItem('qorta_tenant_slug');
 
-    // Validate redirect URL (only allow local pages)
-    if (redirect && (redirect.endsWith('.html') || redirect === '/')) {
-        return redirect;
-    }
+    // Map known page names to tenant-scoped routes
+    const pageRoutes = { 'admin.html': 'admin', 'kitchen.html': 'kitchen' };
+    const route = (redirect && pageRoutes[redirect]) || 'admin';
 
-    // Default to admin dashboard
-    return 'admin.html';
+    return slug ? `/${slug}/${route}` : `/${route}`;
 }
 
 // Map raw auth errors to calm, neutral messages
@@ -93,7 +92,7 @@ async function handleLogin(event) {
             }
 
             // Set explicit kitchen flag if redirecting to kitchen
-            if (getRedirectUrl().includes('kitchen.html')) {
+            if (getRedirectUrl().includes('/kitchen')) {
                 sessionStorage.setItem('kitchen_access_granted', 'true');
             }
 
