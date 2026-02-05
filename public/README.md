@@ -4,8 +4,7 @@ Customer ordering and kitchen management interface for the QORTA multi-tenant re
 
 ## Pages
 
-- **`index.html`** - Customer menu with categories, featured items, cart
-- **`checkout.html`** - Order summary, quantity controls, checkout
+- **`index.html`** - Customer menu with categories, featured items, cart and checkout modal
 - **`track.html`** - Customer order tracking with timeline
 - **`kitchen.html`** - Kitchen board with order status columns
 
@@ -28,15 +27,12 @@ http-server -p 8080
 
 ### Configuration
 
-Update `js/api.js` with your tenant slug:
-```javascript
-const TENANT_SLUG = 'your-restaurant-slug';
-```
+Tenant is resolved automatically from the URL path (e.g., `/chicken-matty`). No manual configuration needed on the frontend.
 
 ## Features
 
 ✅ Category filtering
-✅ Cart management with localStorage
+✅ Cart management (in-memory, session-only)
 ✅ Real-time SSE updates
 ✅ Responsive design
 ✅ Status-based order flow

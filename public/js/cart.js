@@ -13,19 +13,13 @@ class Cart {
         // Namespace cart by tenant (optional for in-memory, but good context)
         if (!window.api || !window.api.tenantSlug) {
             console.error('CRITICAL: Cart initialized without tenant context.');
-            this.tenantSlug = 'unknown_tenant';
+            this.tenantSlug = null;
         } else {
             this.tenantSlug = window.api.tenantSlug;
         }
     }
 
-    // Load from storage - REMOVED for Tier 1 Strict Session
-    loadFromStorage() {
-        return [];
-    }
-
-    // Save to storage - REMOVED for Tier 1 Strict Session (Just notifies UI)
-    saveToStorage() {
+    notifyChange() {
         this.notifyListeners();
         window.dispatchEvent(new CustomEvent('cartUpdated'));
     }
@@ -54,22 +48,22 @@ class Cart {
                 imageUrl: menuItem.imageUrl
             });
         }
-        this.saveToStorage();
+        this.notifyChange();
     }
 
     updateQuantity(index, qty) {
         if (qty <= 0) this.removeItem(index);
-        else { this.items[index].quantity = qty; this.saveToStorage(); }
+        else { this.items[index].quantity = qty; this.notifyChange(); }
     }
 
     removeItem(index) {
         this.items.splice(index, 1);
-        this.saveToStorage();
+        this.notifyChange();
     }
 
     clear() {
         this.items = [];
-        this.saveToStorage();
+        this.notifyChange();
         closeCheckoutModal();
     }
 

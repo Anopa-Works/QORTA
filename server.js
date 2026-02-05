@@ -119,7 +119,7 @@ app.get('/:slug', (req, res, next) => {
 // Root Path (No Tenant) - Should probably show a landing page or 404
 // WE DO NOT DEFAULT TO ANY RESTAURANT.
 app.get('/', (req, res) => {
-    res.status(404).send('<h1>404 - No Restaurant Selected</h1><p>Please use the full URL provided by the restaurant (e.g., /burger-palace).</p>');
+    res.status(404).send('<h1>404 - No Restaurant Selected</h1><p>Please use the restaurant URL you were given.</p>');
 });
 
 // SPA Fallback: Serve index.html for any remaining non-API routes

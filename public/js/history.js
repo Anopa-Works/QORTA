@@ -4,9 +4,7 @@
 
 // Initialize page
 async function init() {
-    // FIX: Rewrite back links to avoid resetting session to Burger Palace
-    // We check API first, then localStorage as fallback
-    const slug = (window.api && window.api.tenantSlug) ? window.api.tenantSlug : localStorage.getItem('qorta_tenant_slug');
+    const slug = window.api && window.api.tenantSlug;
 
     if (slug) {
         const tenantUrl = `/${slug}`;
@@ -116,7 +114,7 @@ function updateOrderCardError(orderId) {
 
 // View order details
 function viewOrder(orderId) {
-    window.location.href = `track.html?order=${orderId}`;
+    window.location.href = `/${api.tenantSlug}/track?order=${orderId}`;
 }
 
 // Clear order history

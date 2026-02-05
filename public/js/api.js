@@ -3,9 +3,6 @@
  * Handles all communication with the backend
  */
 
-// ⚠️ PRODUCTION CONFIGURATION: Update this with your Railway Backend URL
-const BACKEND_URL = 'https://YOUR-RAILWAY-APP-URL.up.railway.app';
-
 class QortaAPI {
     constructor() {
         // Use environment-based URL
@@ -35,7 +32,6 @@ class QortaAPI {
 
         if (!possibleSlug || systemPaths.includes(possibleSlug) || possibleSlug.includes('.')) {
             // CRITICAL: If we are at root "/" or an invalid path, we have NO tenant context.
-            // We cannot default to 'burger-palace'.
             console.error('CRITICAL: No tenant context found in URL path.');
             // Only redirect if we are strictly not on a valid tenant
             if (window.location.pathname === '/' || window.location.pathname === '/index.html') {
