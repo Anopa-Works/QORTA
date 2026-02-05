@@ -180,7 +180,7 @@ function renderOrders() {
         }
 
         // Format timestamp
-        const orderTime = order.createdAt ? new Date(order.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '';
+        const orderTime = order.createdAt ? new Date(order.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
 
         return `
             <div class="order-card status-${statusClass}">

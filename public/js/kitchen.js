@@ -307,9 +307,9 @@ async function updateStatus(orderId, newStatus) {
 function updateClock() {
   const now = new Date();
   const time = now.toLocaleTimeString('en-US', {
-    hour: 'numeric',
+    hour: '2-digit',
     minute: '2-digit',
-    hour12: true
+    hour12: false
   });
   const el = document.getElementById('currentTime');
   if (el) el.textContent = time;
