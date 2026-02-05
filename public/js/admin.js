@@ -33,6 +33,9 @@ async function init() {
         console.log('Authenticated as:', user.email);
         if (authLoading) authLoading.style.display = 'none';
 
+        // Wire tenant-scoped Kitchen Board link
+        document.getElementById('kitchenLink').href = `/${api.tenantSlug}/kitchen`;
+
         // Load orders first (default view)
         await loadOrders();
         await loadCategories();

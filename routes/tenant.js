@@ -5,6 +5,7 @@
 
 const express = require('express');
 const router = express.Router();
+const { auth } = require('../middleware/auth');
 const { validateRequest } = require('../middleware/validateRequest');
 const {
     createTenant,
@@ -12,8 +13,8 @@ const {
     getTenantBySlug
 } = require('../controllers/tenantController');
 
-// Get all tenants
-router.get('/', getAllTenants);
+// Get all tenants (requires auth — controller scopes result to req.user.tenantId)
+router.get('/', auth, getAllTenants);
 
 // Get tenant by slug
 router.get('/:slug', getTenantBySlug);
