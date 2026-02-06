@@ -4,6 +4,7 @@
  */
 
 const Tenant = require('../models/Tenant');
+const { logger } = require('../utils/logger');
 
 const tenantResolver = async (req, res, next) => {
     try {
@@ -36,7 +37,11 @@ const tenantResolver = async (req, res, next) => {
         req.tenant = tenant;
         next();
     } catch (error) {
-        console.error('Tenant resolver error:', error);
+        logger.error('Tenant resolution failed', {
+            requestId: req.requestId,
+            tenantId: req.params.slug,
+            meta: { error: error.message }
+        });
         res.status(500).json({
             success: false,
             error: 'Failed to resolve restaurant'

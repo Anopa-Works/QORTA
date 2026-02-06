@@ -31,15 +31,7 @@ class QortaAPI {
         const systemPaths = ['api', 'js', 'css', 'images', 'favicon.ico'];
 
         if (!possibleSlug || systemPaths.includes(possibleSlug) || possibleSlug.includes('.')) {
-            // CRITICAL: If we are at root "/" or an invalid path, we have NO tenant context.
-            console.error('CRITICAL: No tenant context found in URL path.');
-            // Only redirect if we are strictly not on a valid tenant
-            if (window.location.pathname === '/' || window.location.pathname === '/index.html') {
-                // Optional: redirect to a specific default or landing page if desired, 
-                // but for now we basically leave it null or let the app handle the "Not Found" state.
-                // The user said: If missing -> show "Restaurant not found" error.
-                return null;
-            }
+            // No tenant context - let the app handle the "Not Found" state
             return null;
         }
 
@@ -67,7 +59,6 @@ class QortaAPI {
 
             return await response.json();
         } catch (error) {
-            console.error('API Request failed:', error);
             throw error;
         }
     }
@@ -82,7 +73,7 @@ class QortaAPI {
                 token = await user.getIdToken();
             }
         } catch (e) {
-            console.error('Failed to get auth token:', e);
+            // Token retrieval failed - will proceed without auth
         }
 
         const headers = {
@@ -92,8 +83,6 @@ class QortaAPI {
 
         if (token) {
             headers['Authorization'] = `Bearer ${token}`;
-        } else {
-            console.warn('No auth token available - user may not be logged in');
         }
 
         const url = `${this.baseUrl}/api/${this.tenantSlug}${endpoint}`;
@@ -107,9 +96,9 @@ class QortaAPI {
             if (!response.ok) {
                 const error = await response.json().catch(() => ({ error: 'Request failed' }));
 
-                // Handle 401 - redirect to login
+                // Handle 401 - redirect to tenant-scoped login (SAFE REDIRECT)
                 if (response.status === 401) {
-                    window.location.href = 'admin-login.html';
+                    this.safeRedirect(`/${this.tenantSlug}/login`);
                     return;
                 }
 
@@ -118,9 +107,38 @@ class QortaAPI {
 
             return await response.json();
         } catch (error) {
-            console.error('Auth API Request failed:', error);
             throw error;
         }
+    }
+
+    /**
+     * Safe redirect - validates destination is within allowed paths
+     * Prevents open redirect vulnerabilities
+     */
+    safeRedirect(path) {
+        // Only allow relative paths starting with /
+        if (!path || typeof path !== 'string' || !path.startsWith('/')) {
+            return;
+        }
+
+        // Must be a tenant-scoped path or allowed root path
+        const allowedRootPaths = ['/', '/landing'];
+        const pathParts = path.split('/').filter(p => p);
+
+        // Allow root paths
+        if (allowedRootPaths.includes(path)) {
+            window.location.href = path;
+            return;
+        }
+
+        // Validate tenant-scoped redirect: /{slug}/...
+        // First segment must be current tenant
+        if (pathParts[0] === this.tenantSlug) {
+            window.location.href = path;
+            return;
+        }
+
+        // Block cross-tenant or invalid redirects
     }
 
     // Menu endpoints (public)
@@ -177,12 +195,11 @@ class QortaAPI {
                 const data = JSON.parse(event.data);
                 onMessage(data);
             } catch (error) {
-                console.error('Failed to parse SSE message:', error);
+                // Parse error - skip malformed message
             }
         };
 
         eventSource.onerror = (error) => {
-            console.error('SSE error:', error);
             eventSource.close();
             if (onError) onError(error);
         };
@@ -199,12 +216,11 @@ class QortaAPI {
                 const data = JSON.parse(event.data);
                 onMessage(data);
             } catch (error) {
-                console.error('Failed to parse SSE message:', error);
+                // Parse error - skip malformed message
             }
         };
 
         eventSource.onerror = (error) => {
-            console.error('SSE error:', error);
             eventSource.close();
             if (onError) onError(error);
         };

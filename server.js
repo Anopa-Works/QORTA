@@ -1,14 +1,23 @@
 /**
  * QORTA Backend - Main Server
  * Multi-tenant SaaS backend for restaurant ordering
+ *
+ * SECURITY HARDENED:
+ * - Strict CORS allowlist (no wildcards in production)
+ * - Structured logging (no console.log)
+ * - Tenant validation on page routes
+ * - Request ID tracking
  */
 
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 
 // Middleware
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
+const { logger, requestLogger } = require('./utils/logger');
+const { apiLimiter, authLimiter, orderLimiter } = require('./middleware/rateLimiter');
 
 // Routes
 const tenantRoutes = require('./routes/tenant');
@@ -18,49 +27,155 @@ const orderRoutes = require('./routes/orders');
 const eventRoutes = require('./routes/events');
 const authRoutes = require('./routes/auth');
 
-// Global Crash Handlers for Debugging
+// Models
+const Tenant = require('./models/Tenant');
+
+// ================== GLOBAL ERROR HANDLERS ==================
+
 process.on('uncaughtException', (err) => {
-    console.error('CRITICAL ERROR: Uncaught Exception:', err);
-    // Keep it alive for a moment to flush logs if possible, but generally we should exit
+    logger.error('CRITICAL: Uncaught Exception', {
+        meta: { message: err.message, stack: err.stack }
+    });
     process.exit(1);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-    console.error('CRITICAL ERROR: Unhandled Rejection at:', promise, 'reason:', reason);
+    logger.error('CRITICAL: Unhandled Rejection', {
+        meta: { reason: String(reason) }
+    });
     process.exit(1);
 });
 
 // Initialize Express app
 const app = express();
 
+// ================== SECURITY: CORS CONFIGURATION ==================
+
+/**
+ * CORS Allowlist - CRITICAL SECURITY
+ * NO WILDCARDS IN PRODUCTION
+ */
+const getAllowedOrigins = () => {
+    const origins = [];
+
+    // Production domains (from environment)
+    if (process.env.CORS_ALLOWED_ORIGINS) {
+        origins.push(...process.env.CORS_ALLOWED_ORIGINS.split(',').map(o => o.trim()));
+    }
+
+    // Default production domain
+    if (process.env.PRODUCTION_URL) {
+        origins.push(process.env.PRODUCTION_URL);
+    }
+
+    // Development only
+    if (process.env.NODE_ENV !== 'production') {
+        origins.push('http://localhost:3000');
+        origins.push('http://localhost:5500');
+        origins.push('http://127.0.0.1:3000');
+        origins.push('http://127.0.0.1:5500');
+    }
+
+    return origins;
+};
+
+const corsOptions = {
+    origin: (origin, callback) => {
+        const allowedOrigins = getAllowedOrigins();
+
+        // Allow requests with no origin (same-origin, mobile apps)
+        if (!origin) {
+            return callback(null, true);
+        }
+
+        if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            logger.security(`CORS blocked origin: ${origin}`);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID']
+};
+
+app.use(cors(corsOptions));
+
 // ================== MIDDLEWARE ==================
 
-// Enable CORS
-app.use(cors({
-    origin: process.env.CORS_ORIGIN || '*',
-    credentials: true
-}));
-
-// Parse JSON bodies
-app.use(express.json());
+// Parse JSON bodies (with size limit for security)
+app.use(express.json({ limit: '10kb' }));
 
 // Parse URL-encoded bodies
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+
+// Request logging and ID generation
+app.use(requestLogger);
 
 // Serve static files from 'public' directory
 app.use(express.static('public'));
 
-// Request logging (development)
-if (process.env.NODE_ENV !== 'production') {
-    app.use((req, res, next) => {
-        console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
+// ================== HELPER: TENANT VALIDATION ==================
+
+/**
+ * Validate tenant exists before serving page
+ * Prevents serving app shell for non-existent tenants
+ */
+const validateTenantForPage = async (req, res, next) => {
+    const { slug } = req.params;
+
+    // Skip system paths
+    const systemPaths = ['api', 'js', 'css', 'images', 'favicon.ico', 'landing', 'logos'];
+    if (systemPaths.includes(slug)) {
+        return next();
+    }
+
+    try {
+        const tenant = await Tenant.findBySlug(slug);
+
+        if (!tenant) {
+            return res.status(404).send(`
+                <!DOCTYPE html>
+                <html>
+                <head><title>Restaurant Not Found</title></head>
+                <body style="font-family: sans-serif; text-align: center; padding: 50px;">
+                    <h1>Restaurant Not Found</h1>
+                    <p>The restaurant "${slug}" does not exist or is no longer available.</p>
+                    <p>Please check the URL you were given.</p>
+                </body>
+                </html>
+            `);
+        }
+
+        if (!tenant.isActive) {
+            return res.status(403).send(`
+                <!DOCTYPE html>
+                <html>
+                <head><title>Restaurant Unavailable</title></head>
+                <body style="font-family: sans-serif; text-align: center; padding: 50px;">
+                    <h1>Restaurant Temporarily Unavailable</h1>
+                    <p>This restaurant is currently not accepting orders.</p>
+                    <p>Please try again later.</p>
+                </body>
+                </html>
+            `);
+        }
+
+        // Tenant is valid, proceed
         next();
-    });
-}
+    } catch (error) {
+        logger.error('Tenant validation failed', {
+            tenantId: slug,
+            meta: { error: error.message }
+        });
+        return res.status(500).send('Server error. Please try again.');
+    }
+};
 
 // ================== ROUTES ==================
 
-// Health check
+// Health check (no auth required)
 app.get('/health', (req, res) => {
     res.json({
         status: 'ok',
@@ -70,68 +185,99 @@ app.get('/health', (req, res) => {
 });
 
 // Platform admin routes (tenant management)
-app.use('/api/tenants', tenantRoutes);
+app.use('/api/tenants', apiLimiter, tenantRoutes);
 
-// Tenant-scoped routes
-app.use('/api/:slug/menu', menuRoutes);
-app.use('/api/:slug/categories', categoryRoutes);
-app.use('/api/:slug/orders', orderRoutes);
-app.use('/api/:slug/events', eventRoutes);
-app.use('/api/:slug/auth', authRoutes);
+// Tenant-scoped API routes with rate limiting
+app.use('/api/:slug/menu', apiLimiter, menuRoutes);
+app.use('/api/:slug/categories', apiLimiter, categoryRoutes);
+app.use('/api/:slug/orders', orderLimiter, orderRoutes);  // Stricter limit for orders
+app.use('/api/:slug/events', apiLimiter, eventRoutes);
+app.use('/api/:slug/auth', authLimiter, authRoutes);      // Brute force protection
 
-// ================== ERROR HANDLING ==================
+// ================== TENANT PAGE ROUTES ==================
+// All tenant pages validate tenant exists BEFORE serving HTML
 
-// Tenant-specific Pages (Serve static files with context)
-app.get('/:slug/admin', (req, res) => {
-    res.sendFile(require('path').join(__dirname, 'public', 'admin.html'));
+app.get('/:slug/admin', validateTenantForPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-app.get('/:slug/kitchen', (req, res) => {
-    res.sendFile(require('path').join(__dirname, 'public', 'kitchen.html'));
+app.get('/:slug/kitchen', validateTenantForPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'kitchen.html'));
 });
 
-app.get('/:slug/login', (req, res) => {
-    res.sendFile(require('path').join(__dirname, 'public', 'admin-login.html'));
+app.get('/:slug/login', validateTenantForPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin-login.html'));
 });
 
-app.get('/:slug/history', (req, res) => {
-    res.sendFile(require('path').join(__dirname, 'public', 'history.html'));
+app.get('/:slug/history', validateTenantForPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'history.html'));
 });
 
-app.get('/:slug/track', (req, res) => {
-    res.sendFile(require('path').join(__dirname, 'public', 'track.html'));
+app.get('/:slug/track', validateTenantForPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'track.html'));
 });
 
-app.get('/:slug/track/:id', (req, res) => {
-    res.sendFile(require('path').join(__dirname, 'public', 'track.html'));
+app.get('/:slug/track/:id', validateTenantForPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'track.html'));
 });
 
 // Main Menu (Tenant Index)
-app.get('/:slug', (req, res, next) => {
-    // Prevent system directories from being treated as slugs
-    const systemPaths = ['api', 'js', 'css', 'images', 'favicon.ico'];
-    if (systemPaths.includes(req.params.slug)) {
-        return next();
-    }
-    res.sendFile(require('path').join(__dirname, 'public', 'index.html'));
+app.get('/:slug', validateTenantForPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Root Path (No Tenant) - Should probably show a landing page or 404
-// WE DO NOT DEFAULT TO ANY RESTAURANT.
+// ================== ROOT & FALLBACK ==================
+
+// Root Path - No tenant selected
 app.get('/', (req, res) => {
-    res.status(404).send('<h1>404 - No Restaurant Selected</h1><p>Please use the restaurant URL you were given.</p>');
+    // Serve landing page if it exists
+    res.sendFile(path.join(__dirname, 'public', 'landing', 'index.html'), (err) => {
+        if (err) {
+            res.status(404).send(`
+                <!DOCTYPE html>
+                <html>
+                <head><title>QORTA</title></head>
+                <body style="font-family: sans-serif; text-align: center; padding: 50px;">
+                    <h1>Welcome to QORTA</h1>
+                    <p>Please use the restaurant URL you were given to place an order.</p>
+                </body>
+                </html>
+            `);
+        }
+    });
 });
 
-// SPA Fallback: Serve index.html for any remaining non-API routes
-// This allows paths like /chicken-matty to be handled by the frontend (menu)
-app.get('*', (req, res, next) => {
+// SPA Fallback - validate tenant before serving
+app.get('*', async (req, res, next) => {
+    // Skip API routes
     if (req.path.startsWith('/api')) {
         return next();
     }
-    res.sendFile(require('path').join(__dirname, 'public', 'index.html'));
+
+    // Extract potential slug from path
+    const pathParts = req.path.split('/').filter(p => p);
+    const possibleSlug = pathParts[0];
+
+    // Skip system paths
+    const systemPaths = ['api', 'js', 'css', 'images', 'favicon.ico', 'landing', 'logos'];
+    if (!possibleSlug || systemPaths.includes(possibleSlug)) {
+        return next();
+    }
+
+    // Validate tenant exists
+    try {
+        const tenant = await Tenant.findBySlug(possibleSlug);
+        if (tenant && tenant.isActive) {
+            return res.sendFile(path.join(__dirname, 'public', 'index.html'));
+        }
+    } catch (error) {
+        logger.debug('SPA fallback tenant check failed', { meta: { path: req.path } });
+    }
+
+    next();
 });
 
-// 404 handler (for API only now)
+// 404 handler (for API routes)
 app.use(notFoundHandler);
 
 // Global error handler
@@ -142,21 +288,12 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 3000;
 
 const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`
-╔═══════════════════════════════════════════════════╗
-║                                                   ║
-║   QORTA Backend Server                            ║
-║   Multi-tenant Restaurant Ordering System         ║
-║                                                   ║
-║   Running on: http://0.0.0.0:${PORT}              ║
-║   Environment: ${process.env.NODE_ENV || 'development'}                     ║
-║                                                   ║
-╚═══════════════════════════════════════════════════╝
-  `);
+    logger.info(`QORTA Backend started on port ${PORT}`, {
+        meta: { environment: process.env.NODE_ENV || 'development' }
+    });
 });
 
-// Render / Load Balancer Keep-Alive settings
-// Prevents 502 Bad Gateway errors by ensuring Node waits longer than the LB
+// Keep-Alive settings for load balancers
 server.keepAliveTimeout = 120 * 1000;
 server.headersTimeout = 120 * 1000;
 

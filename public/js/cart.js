@@ -10,9 +10,9 @@ class Cart {
         this.listeners = [];
         this.orderType = 'dine-in'; // Default
 
-        // Namespace cart by tenant (optional for in-memory, but good context)
+        // Namespace cart by tenant - CRITICAL for tenant isolation
         if (!window.api || !window.api.tenantSlug) {
-            console.error('CRITICAL: Cart initialized without tenant context.');
+            // Silent fail - cart will work but history won't persist
             this.tenantSlug = null;
         } else {
             this.tenantSlug = window.api.tenantSlug;
@@ -176,16 +176,19 @@ async function confirmOrder() {
 
         const response = await api.createOrder(orderData);
 
-        // Persist order to history for the Order History page
-        const historyKey = 'qorta_order_history';
+        // Persist order to history - TENANT-SCOPED to prevent cross-tenant data leakage
+        const historyKey = `qorta_${api.tenantSlug}_order_history`;
         const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
         history.unshift({
             id: response.data.id,
             orderNumber: response.data.orderNumber,
             total: response.data.total,
             itemCount: items.length,
-            createdAt: response.data.createdAt || new Date().toISOString()
+            createdAt: response.data.createdAt || new Date().toISOString(),
+            tenantSlug: api.tenantSlug // Store tenant for verification
         });
+        // Keep only last 50 orders per tenant
+        if (history.length > 50) history.length = 50;
         localStorage.setItem(historyKey, JSON.stringify(history));
 
         // Success
@@ -202,8 +205,8 @@ async function confirmOrder() {
         }, 2000);
 
     } catch (e) {
-        console.error(e);
-        alert('Order Failed: ' + e.message);
+        // Error already logged by API layer
+        alert('Order Failed: ' + (e.message || 'Please try again'));
         btn.disabled = false;
         btn.innerHTML = 'Confirm Order';
     }

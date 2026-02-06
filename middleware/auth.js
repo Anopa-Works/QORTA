@@ -4,6 +4,7 @@
  */
 
 const admin = require('firebase-admin');
+const { logger } = require('../utils/logger');
 
 /**
  * Auth middleware - Verifies Firebase ID token
@@ -47,7 +48,16 @@ const auth = async (req, res, next) => {
         // we MUST check if this admin belongs to it.
         if (req.tenant && req.user.tenantId) {
             if (req.tenant.id !== req.user.tenantId) {
-                console.warn(`Security Alert: Admin ${req.user.email} (Tenant: ${req.user.tenantId}) tried to access Tenant ${req.tenant.id}`);
+                logger.security('Cross-tenant access attempt blocked', {
+                    requestId: req.requestId,
+                    tenantId: req.tenant.id,
+                    userId: req.user.uid,
+                    meta: {
+                        userEmail: req.user.email,
+                        userTenantId: req.user.tenantId,
+                        targetTenantId: req.tenant.id
+                    }
+                });
                 return res.status(403).json({
                     error: 'Forbidden',
                     message: 'You do not have access to this restaurant instance.'
@@ -67,7 +77,11 @@ const auth = async (req, res, next) => {
 
         next();
     } catch (error) {
-        console.error('Auth error:', error.message);
+        logger.warn('Authentication failed', {
+            requestId: req.requestId,
+            tenantId: req.tenant?.id,
+            meta: { code: error.code, message: error.message }
+        });
 
         if (error.code === 'auth/id-token-expired') {
             return res.status(401).json({

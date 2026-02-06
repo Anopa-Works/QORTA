@@ -25,7 +25,8 @@ async function init() {
 
 // Load orders from localStorage and fetch current status
 async function loadOrderHistory() {
-    const historyKey = 'qorta_order_history';
+    // TENANT-SCOPED key to prevent cross-tenant data leakage
+    const historyKey = `qorta_${api.tenantSlug}_order_history`;
     const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
 
     const ordersList = document.getElementById('ordersList');
@@ -49,7 +50,7 @@ async function loadOrderHistory() {
             const response = await api.getOrder(order.id);
             updateOrderCard(order.id, response.data);
         } catch (error) {
-            console.error(`Failed to load order ${order.id}:`, error);
+            // Order may have been deleted or expired
             updateOrderCardError(order.id);
         }
     }
@@ -119,10 +120,11 @@ function viewOrder(orderId) {
     window.location.href = `/${api.tenantSlug}/track?order=${orderId}`;
 }
 
-// Clear order history
+// Clear order history for current tenant only
 function clearHistory() {
     if (confirm('Are you sure you want to clear your order history?')) {
-        localStorage.removeItem('qorta_order_history');
+        const historyKey = `qorta_${api.tenantSlug}_order_history`;
+        localStorage.removeItem(historyKey);
         loadOrderHistory();
     }
 }
