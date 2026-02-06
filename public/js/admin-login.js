@@ -84,11 +84,11 @@ async function handleLogin(event) {
                         }
 
                         localStorage.setItem('qorta_tenant_slug', tenant.slug);
-                        console.log('Set tenant session:', tenant.slug);
+                        // Log:('Set tenant session:', tenant.slug);
                     }
                 }
             } catch (e) {
-                console.warn('Failed to auto-discover tenant:', e);
+                // Warn:('Failed to auto-discover tenant:', e);
             }
 
             // Set explicit kitchen flag if redirecting to kitchen

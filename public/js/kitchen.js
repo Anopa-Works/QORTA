@@ -12,7 +12,7 @@ function initAudio() {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     audioCtx = new AudioContext();
   } catch (e) {
-    console.warn('Web Audio API not supported');
+    // Warn:('Web Audio API not supported');
   }
 }
 
@@ -93,7 +93,7 @@ async function init() {
     await loadKitchenBoard();
     setupSSE();
   } catch (error) {
-    console.error('Initialization error:', error);
+    // Error:('Initialization error:', error);
     window.location.href = 'admin-login.html?redirect=kitchen.html';
   }
 }
@@ -105,7 +105,7 @@ async function loadKitchenBoard() {
     kitchenData = response.data;
     renderKitchenBoard();
   } catch (error) {
-    console.error('Failed to load kitchen board:', error);
+    // Error:('Failed to load kitchen board:', error);
     // Check for 403 Forbidden - Redirect to Menu
     if (error.message.includes('Forbidden') || error.message.includes('403') || error.message.includes('access')) {
       const slug = api.tenantSlug;
@@ -129,12 +129,12 @@ async function setupSSE() {
       token,
       (data) => handleSSEMessage(data),
       (error) => {
-        console.error('SSE connection error:', error);
+        // Error:('SSE connection error:', error);
         setTimeout(setupSSE, 5000);
       }
     );
   } catch (error) {
-    console.error('Failed to get token for SSE:', error);
+    // Error:('Failed to get token for SSE:', error);
     setTimeout(setupSSE, 5000);
   }
 }
@@ -305,7 +305,7 @@ async function updateStatus(orderId, newStatus) {
   try {
     await api.updateOrderStatus(orderId, newStatus);
   } catch (error) {
-    console.error('Failed to update status:', error);
+    // Error:('Failed to update status:', error);
     // Error is logged, kitchen board will reload automatically
   }
 }

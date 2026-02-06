@@ -6,10 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>QORTA - Menu</title>
   <meta name="description" content="Browse our menu and place your order">
-  <link rel="stylesheet" href="/css/main.css?v=4">
-  <link rel="stylesheet" href="/css/menu.css?v=4">
-  <link rel="stylesheet" href="/css/loader.css?v=4">
-  <link rel="stylesheet" href="/css/mobile-nav.css?v=4">
+  <link rel="stylesheet" href="/css/main.css?v=5">
+  <link rel="stylesheet" href="/css/menu.css?v=5">
+  <link rel="stylesheet" href="/css/loader.css?v=6">
+  <link rel="stylesheet" href="/css/mobile-nav.css?v=5">
 </head>
 
 <body>
@@ -17,9 +17,16 @@
   <!-- Context Loader (covers screen until data is ready) -->
   <div id="contextLoader" class="context-loader">
     <div class="context-loader-content">
+      <!-- Q Mark Visual Anchor -->
+      <div class="loader-q-mark">
+        <img src="/logos/q-mark.png" alt="Q" class="loader-q-img">
+      </div>
+      <!-- Restaurant Name -->
       <h1 class="loader-restaurant-name" id="loaderRestaurantName">Loading...</h1>
+      <!-- Loading State -->
+      <p class="loader-status" id="loaderStatus">Loading menu<span class="loading-dots"></span></p>
+      <!-- Brand Attribution -->
       <p class="loader-branding">powered by QORTA</p>
-      <p class="loader-tagline" id="loaderTagline">SPEED | CLARITY | ACCURACY</p>
     </div>
   </div>
 
@@ -166,10 +173,10 @@
   </nav>
 
   <!-- Scripts (load order matters: api → cart → menu → mobile-nav) -->
-  <script src="/js/api.js?v=4"></script>
-  <script src="/js/cart.js?v=4"></script>
-  <script src="/js/menu.js?v=4"></script>
-  <script src="/js/mobile-nav.js?v=4"></script>
+  <script src="/js/api.js?v=5"></script>
+  <script src="/js/cart.js?v=5"></script>
+  <script src="/js/menu.js?v=5"></script>
+  <script src="/js/mobile-nav.js?v=5"></script>
 
 </body>
 </html>

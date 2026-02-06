@@ -13,12 +13,12 @@ let loaderTimeout = null;
 async function init() {
     const loader = document.getElementById('contextLoader');
     const mainContent = document.getElementById('mainContent');
-    const tagline = document.getElementById('loaderTagline');
+    const statusEl = document.getElementById('loaderStatus');
 
-    // Fail-safe: Show "Still loading..." after 4 seconds
+    // Fail-safe: Update status after 4 seconds
     loaderTimeout = setTimeout(() => {
-        if (loader && !loader.classList.contains('hidden')) {
-            tagline.textContent = 'Still loading menu…';
+        if (loader && !loader.classList.contains('hidden') && statusEl) {
+            statusEl.innerHTML = 'Still loading<span class="loading-dots"></span>';
         }
     }, 4000);
 
@@ -51,7 +51,7 @@ async function init() {
         hideLoader();
 
     } catch (error) {
-        console.error('Failed to load menu:', error);
+        // Error:('Failed to load menu:', error);
         showError('Unable to load menu. Please refresh the page.');
         // Still hide loader even on error
         hideLoader();
@@ -84,7 +84,7 @@ async function retryOperation(operation, maxRetries = 3, delay = 1000) {
             return await operation();
         } catch (error) {
             if (i === maxRetries - 1) throw error;
-            console.warn(`Attempt ${i + 1} failed, retrying in ${delay}ms...`, error);
+            // Warn:(`Attempt ${i + 1} failed, retrying in ${delay}ms...`, error);
             await new Promise(resolve => setTimeout(resolve, delay));
             delay *= 2; // Exponential backoff
         }
@@ -98,7 +98,7 @@ async function loadCategories() {
         categories = response.data || [];
         renderCategoryNav();
     } catch (error) {
-        console.error('Failed to load categories after retries:', error);
+        // Error:('Failed to load categories after retries:', error);
         categories = [];
         // Non-critical, can continue without categories (display "All")
     }
@@ -119,7 +119,7 @@ async function loadFeaturedItems() {
         const grid = document.getElementById('featuredGrid');
         if (grid) grid.innerHTML = featured.map(item => createMenuItemCard(item, true)).join('');
     } catch (error) {
-        console.error('Failed to load featured items:', error);
+        // Error:('Failed to load featured items:', error);
         const section = document.getElementById('featuredSection');
         if (section) section.style.display = 'none';
     }
@@ -132,7 +132,7 @@ async function loadMenuItems() {
         menuItems = response.data;
         renderMenuByCategory();
     } catch (error) {
-        console.error('Failed to load menu items:', error);
+        // Error:('Failed to load menu items:', error);
         throw error; // Critical error, propagate to init
     }
 }

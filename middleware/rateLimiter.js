@@ -102,24 +102,28 @@ const apiLimiter = createRateLimiter({
 });
 
 // Auth rate limiter - 10 login attempts per minute (brute force protection)
+// Compound key: tenant + IP to prevent cross-tenant attacks
 const authLimiter = createRateLimiter({
     windowMs: 60000,
     max: 10,
     message: 'Too many authentication attempts. Please wait before trying again.',
     keyGenerator: (req) => {
         const ip = req.ip || req.connection.remoteAddress || 'unknown';
-        return `auth:${ip}`;
+        const tenant = req.params.slug || 'global';
+        return `auth:${tenant}:${ip}`;
     }
 });
 
-// Order creation rate limiter - 20 orders per minute per IP
+// Order creation rate limiter - 20 orders per minute
+// Compound key: tenant + IP to scope limits per restaurant
 const orderLimiter = createRateLimiter({
     windowMs: 60000,
     max: 20,
     message: 'Too many orders. Please wait before placing another order.',
     keyGenerator: (req) => {
         const ip = req.ip || req.connection.remoteAddress || 'unknown';
-        return `order:${ip}`;
+        const tenant = req.params.slug || 'global';
+        return `order:${tenant}:${ip}`;
     }
 });
 

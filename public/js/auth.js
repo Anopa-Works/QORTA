@@ -24,7 +24,7 @@ const auth = {
             this.currentUser = result.user;
             return { success: true, user: result.user };
         } catch (error) {
-            console.error('Login error:', error);
+            // Error:('Login error:', error);
             return {
                 success: false,
                 error: this.getErrorMessage(error.code)
@@ -39,7 +39,7 @@ const auth = {
             this.currentUser = null;
             return { success: true };
         } catch (error) {
-            console.error('Logout error:', error);
+            // Error:('Logout error:', error);
             return { success: false, error: error.message };
         }
     },
@@ -50,7 +50,7 @@ const auth = {
         try {
             return await this.currentUser.getIdToken();
         } catch (error) {
-            console.error('Token error:', error);
+            // Error:('Token error:', error);
             return null;
         }
     },

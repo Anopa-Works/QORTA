@@ -30,7 +30,7 @@ async function init() {
             return;
         }
 
-        console.log('Authenticated as:', user.email);
+        // Debug:('Authenticated as:', user.email);
         if (authLoading) authLoading.style.display = 'none';
 
         // Wire tenant-scoped Kitchen Board link
@@ -45,7 +45,7 @@ async function init() {
         setupOrdersSSE();
         setInterval(loadOrders, 15000); // Auto-refresh every 15s
     } catch (error) {
-        console.error('Initialization error:', error);
+        // Error:('Initialization error:', error);
         window.location.href = 'admin-login.html?redirect=admin.html';
     }
 }
@@ -78,7 +78,7 @@ async function loadMenuItems() {
         menuItems = response.data || [];
         renderMenuItems();
     } catch (error) {
-        console.error('Failed to load menu items:', error);
+        // Error:('Failed to load menu items:', error);
         showToast('Failed to load menu items', 'error');
     }
 }
@@ -90,7 +90,7 @@ async function loadCategories() {
         renderCategories();
         populateCategoryDropdown();
     } catch (error) {
-        console.error('Failed to load categories:', error);
+        // Error:('Failed to load categories:', error);
         showToast('Failed to load categories', 'error');
     }
 }
@@ -117,7 +117,7 @@ async function loadOrders() {
 
         renderOrders();
     } catch (error) {
-        console.error('Failed to load orders:', error);
+        // Error:('Failed to load orders:', error);
         showToast('Failed to load orders', 'error');
     }
 }
@@ -222,8 +222,8 @@ async function updateOrderStatus(orderId, newStatus) {
         await loadOrders();
         showToast('Order status updated', 'success');
     } catch (error) {
-        console.error('Failed to update order:', error);
-        console.error('Order ID:', orderId, 'New Status:', newStatus);
+        // Error:('Failed to update order:', error);
+        // Error:('Order ID:', orderId, 'New Status:', newStatus);
 
         // More helpful error message
         const errorMsg = error.message || 'Failed to update order status';
@@ -252,16 +252,16 @@ async function setupOrdersSSE() {
                 loadOrders();
             },
             (error) => {
-                console.error('SSE connection error:', error);
+                // Error:('SSE connection error:', error);
                 // Try to reconnect after 5 seconds
                 setTimeout(() => {
-                    console.log('Attempting to reconnect SSE...');
+                    // Debug:('Attempting to reconnect SSE...');
                     setupOrdersSSE();
                 }, 5000);
             }
         );
     } catch (error) {
-        console.error('Failed to set up SSE:', error);
+        // Error:('Failed to set up SSE:', error);
     }
 }
 
@@ -447,7 +447,7 @@ async function saveItem(event) {
         closeItemModal();
         await loadMenuItems();
     } catch (error) {
-        console.error('Failed to save item:', error);
+        // Error:('Failed to save item:', error);
         showToast('Failed to save item: ' + error.message, 'error');
     } finally {
         saveBtn.disabled = false;
@@ -464,7 +464,7 @@ async function toggleItemAvailability(itemId, available) {
         showToast(available ? 'Item is now available' : 'Item is now hidden');
         await loadMenuItems();
     } catch (error) {
-        console.error('Failed to toggle availability:', error);
+        // Error:('Failed to toggle availability:', error);
         showToast('Failed to update item', 'error');
     }
 }
@@ -484,7 +484,7 @@ async function deleteItem(itemId) {
         closeDeleteModal();
         await loadMenuItems();
     } catch (error) {
-        console.error('Failed to delete item:', error);
+        // Error:('Failed to delete item:', error);
         showToast('Failed to delete item', 'error');
     }
 }
@@ -545,7 +545,7 @@ async function saveCategory(event) {
         await loadCategories();
         await loadMenuItems();
     } catch (error) {
-        console.error('Failed to save category:', error);
+        // Error:('Failed to save category:', error);
         showToast('Failed to save category', 'error');
     }
 }
@@ -569,7 +569,7 @@ async function deleteCategory(categoryId) {
         await loadCategories();
         await loadMenuItems();
     } catch (error) {
-        console.error('Failed to delete category:', error);
+        // Error:('Failed to delete category:', error);
         showToast('Failed to delete category', 'error');
     }
 }

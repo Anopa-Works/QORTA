@@ -32,7 +32,7 @@ function initAudio() {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     audioCtx = new AudioContext();
   } catch (e) {
-    console.warn('Web Audio API not supported');
+    // Warn:('Web Audio API not supported');
   }
 }
 
@@ -125,7 +125,7 @@ async function loadOrderTracking() {
     currentStatus = order.status;
     renderOrderTracking(order);
   } catch (error) {
-    console.error('Failed to load order:', error);
+    // Error:('Failed to load order:', error);
     if (!orderLoaded) {
       showError('Unable to load order tracking. Please try again.');
     }
@@ -138,7 +138,7 @@ function setupSSE() {
     orderId,
     (data) => handleSSEMessage(data),
     (error) => {
-      console.error('SSE connection error:', error);
+      // Error:('SSE connection error:', error);
       setTimeout(setupSSE, 5000);
     }
   );

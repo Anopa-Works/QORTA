@@ -67,11 +67,26 @@ const auth = async (req, res, next) => {
 
         // If user has no tenantId but is trying to access a tenant route
         if (req.tenant && !req.user.tenantId) {
-            // Optional: Allow "Super Admins" here if you had them, but for now Strict.
-            // OR: If it's a new signup flow? But we assume pre-seeded admins.
             return res.status(403).json({
                 error: 'Forbidden',
                 message: 'No restaurant associated with this account.'
+            });
+        }
+
+        // ROLE CHECK: User must have ADMIN role to access protected routes
+        if (!req.user.role || req.user.role !== 'ADMIN') {
+            logger.security('Non-admin access attempt blocked', {
+                requestId: req.requestId,
+                tenantId: req.tenant?.id,
+                userId: req.user.uid,
+                meta: {
+                    userEmail: req.user.email,
+                    userRole: req.user.role || 'none'
+                }
+            });
+            return res.status(403).json({
+                error: 'Forbidden',
+                message: 'Admin access required.'
             });
         }
 

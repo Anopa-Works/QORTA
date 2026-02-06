@@ -114,10 +114,41 @@ class QortaAPI {
     /**
      * Safe redirect - validates destination is within allowed paths
      * Prevents open redirect vulnerabilities
+     *
+     * SECURITY: Blocks javascript:, data:, //, and external URLs
      */
     safeRedirect(path) {
-        // Only allow relative paths starting with /
-        if (!path || typeof path !== 'string' || !path.startsWith('/')) {
+        // Must be a non-empty string
+        if (!path || typeof path !== 'string') {
+            return;
+        }
+
+        // Decode and normalize to catch encoded attacks
+        let normalizedPath;
+        try {
+            normalizedPath = decodeURIComponent(path).trim().toLowerCase();
+        } catch (e) {
+            // Invalid encoding - reject
+            return;
+        }
+
+        // BLOCK: Protocol handlers (javascript:, data:, vbscript:, etc.)
+        if (/^[a-z][a-z0-9+.-]*:/i.test(normalizedPath)) {
+            return;
+        }
+
+        // BLOCK: Protocol-relative URLs (//evil.com)
+        if (normalizedPath.startsWith('//')) {
+            return;
+        }
+
+        // BLOCK: Backslash variants (IE compatibility attack)
+        if (path.includes('\\')) {
+            return;
+        }
+
+        // Must start with single forward slash (relative path)
+        if (!path.startsWith('/') || path.startsWith('//')) {
             return;
         }
 
@@ -133,12 +164,12 @@ class QortaAPI {
 
         // Validate tenant-scoped redirect: /{slug}/...
         // First segment must be current tenant
-        if (pathParts[0] === this.tenantSlug) {
+        if (this.tenantSlug && pathParts[0] === this.tenantSlug) {
             window.location.href = path;
             return;
         }
 
-        // Block cross-tenant or invalid redirects
+        // Block cross-tenant or invalid redirects - silent fail
     }
 
     // Menu endpoints (public)
