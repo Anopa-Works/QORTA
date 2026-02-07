@@ -6,7 +6,16 @@
 function getRedirectUrl() {
     const params = new URLSearchParams(window.location.search);
     const redirect = params.get('redirect');
-    const slug = localStorage.getItem('qorta_tenant_slug');
+
+    // Get slug from localStorage OR extract from current URL path
+    let slug = localStorage.getItem('qorta_tenant_slug');
+    if (!slug) {
+        // Extract slug from URL path (e.g., /chicken-matty/login -> chicken-matty)
+        const pathParts = window.location.pathname.split('/').filter(p => p);
+        if (pathParts.length > 0 && !['login', 'admin', 'kitchen'].includes(pathParts[0])) {
+            slug = pathParts[0];
+        }
+    }
 
     // Map known page names to tenant-scoped routes
     const pageRoutes = { 'admin.html': 'admin', 'kitchen.html': 'kitchen' };
