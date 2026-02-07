@@ -436,11 +436,11 @@
         // Check auth state on load
         auth.onAuthStateChanged(async (user) => {
             if (user) {
-                // Get token and verify SUPER_ADMIN role
-                const tokenResult = await user.getIdTokenResult();
+                // Force token refresh to get latest custom claims
+                const tokenResult = await user.getIdTokenResult(true);
                 if (tokenResult.claims.role === 'SUPER_ADMIN') {
                     currentUser = user;
-                    authToken = await user.getIdToken();
+                    authToken = tokenResult.token;
                     showDashboard();
                 } else {
                     showError('Access denied. SUPER_ADMIN role required.');
