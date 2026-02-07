@@ -21,6 +21,7 @@ const { apiLimiter, authLimiter, orderLimiter } = require('./middleware/rateLimi
 
 // Routes
 const tenantRoutes = require('./routes/tenant');
+const platformRoutes = require('./routes/platform');
 const menuRoutes = require('./routes/menu');
 const categoryRoutes = require('./routes/categories');
 const orderRoutes = require('./routes/orders');
@@ -126,7 +127,7 @@ const validateTenantForPage = async (req, res, next) => {
     const { slug } = req.params;
 
     // Skip system paths
-    const systemPaths = ['api', 'js', 'css', 'images', 'favicon.ico', 'landing', 'logos'];
+    const systemPaths = ['api', 'js', 'css', 'images', 'favicon.ico', 'landing', 'logos', 'platform'];
     if (systemPaths.includes(slug)) {
         return next();
     }
@@ -184,7 +185,15 @@ app.get('/health', (req, res) => {
     });
 });
 
-// Platform admin routes (tenant management)
+// Platform admin dashboard (SUPER_ADMIN only - auth handled client-side)
+app.get('/platform/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'platform', 'admin.html'));
+});
+
+// Super admin routes (SUPER_ADMIN only)
+app.use('/api/platform', apiLimiter, platformRoutes);
+
+// Legacy tenant routes (for existing admin functionality)
 app.use('/api/tenants', apiLimiter, tenantRoutes);
 
 // Tenant-scoped API routes with rate limiting
@@ -259,7 +268,7 @@ app.get('*', async (req, res, next) => {
     const possibleSlug = pathParts[0];
 
     // Skip system paths
-    const systemPaths = ['api', 'js', 'css', 'images', 'favicon.ico', 'landing', 'logos'];
+    const systemPaths = ['api', 'js', 'css', 'images', 'favicon.ico', 'landing', 'logos', 'platform'];
     if (!possibleSlug || systemPaths.includes(possibleSlug)) {
         return next();
     }

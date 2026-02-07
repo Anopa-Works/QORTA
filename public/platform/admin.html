@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QORTA Platform Admin</title>
+    <meta name="robots" content="noindex, nofollow">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        /* Login Screen */
+        .login-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .login-subtitle {
+            color: #888;
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 15px;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #fff;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: #fff;
+            color: #0a0a0a;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .error-msg {
+            color: #ff4444;
+            font-size: 13px;
+            margin-top: 12px;
+            text-align: center;
+        }
+
+        /* Dashboard */
+        .dashboard {
+            display: none;
+        }
+
+        .dashboard.active {
+            display: block;
+        }
+
+        .header {
+            background: #1a1a1a;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .header-user {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-email {
+            color: #888;
+            font-size: 13px;
+        }
+
+        .btn-logout {
+            padding: 8px 16px;
+            background: transparent;
+            color: #888;
+            border: 1px solid #333;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .btn-logout:hover {
+            color: #fff;
+            border-color: #666;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .btn-create {
+            padding: 10px 20px;
+            background: #fff;
+            color: #0a0a0a;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Tenant List */
+        .tenant-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .tenant-card {
+            background: #1a1a1a;
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .tenant-info h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .tenant-slug {
+            color: #888;
+            font-size: 13px;
+            font-family: monospace;
+        }
+
+        .tenant-meta {
+            display: flex;
+            gap: 16px;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .tenant-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-badge.active {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .status-badge.inactive {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .btn-toggle {
+            padding: 6px 12px;
+            background: transparent;
+            color: #888;
+            border: 1px solid #333;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .btn-toggle:hover {
+            color: #fff;
+            border-color: #666;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-state p {
+            margin-bottom: 20px;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 32px;
+            width: 100%;
+            max-width: 480px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 24px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .btn-cancel {
+            flex: 1;
+            padding: 12px;
+            background: transparent;
+            color: #888;
+            border: 1px solid #333;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .btn-submit {
+            flex: 1;
+            padding: 12px;
+            background: #fff;
+            color: #0a0a0a;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-card">
+            <h1 class="login-title">Platform Admin</h1>
+            <p class="login-subtitle">Sign in with your SUPER_ADMIN account</p>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" id="loginEmail" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" id="loginPassword" class="form-input" required>
+                </div>
+                <button type="submit" class="btn" id="loginBtn">Sign In</button>
+                <p id="loginError" class="error-msg" style="display: none;"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard" class="dashboard">
+        <header class="header">
+            <h1 class="header-title">QORTA Platform</h1>
+            <div class="header-user">
+                <span class="header-email" id="userEmail"></span>
+                <button class="btn-logout" onclick="logout()">Sign Out</button>
+            </div>
+        </header>
+
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Tenants</h2>
+                <button class="btn-create" onclick="openCreateModal()">+ Create Tenant</button>
+            </div>
+
+            <div id="tenantList" class="tenant-list">
+                <div class="loading">Loading tenants...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Tenant Modal -->
+    <div id="createModal" class="modal-overlay" onclick="if(event.target===this)closeCreateModal()">
+        <div class="modal">
+            <h2 class="modal-title">Create New Tenant</h2>
+
+            <form id="createForm">
+                <div class="form-group">
+                    <label class="form-label">Restaurant Name</label>
+                    <input type="text" id="tenantName" class="form-input" placeholder="e.g. Pizza Palace" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Slug (URL path)</label>
+                    <input type="text" id="tenantSlug" class="form-input" placeholder="e.g. pizza-palace" pattern="^[a-z0-9]+(-[a-z0-9]+)*$" required>
+                    <small style="color: #666; font-size: 11px;">Lowercase letters, numbers, and hyphens only</small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Admin Email</label>
+                    <input type="email" id="adminEmail" class="form-input" placeholder="admin@restaurant.com" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Admin Name (optional)</label>
+                    <input type="text" id="adminName" class="form-input" placeholder="John Smith">
+                </div>
+
+                <p id="createError" class="error-msg" style="display: none;"></p>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeCreateModal()">Cancel</button>
+                    <button type="submit" class="btn-submit" id="createBtn">Create Tenant</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+
+    <script>
+        // Firebase config (same as rest of app)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBzeIm1dZc26w3ZLDBqkRTk3hUx-qYW978",
+            authDomain: "qorta-production.firebaseapp.com",
+            projectId: "qorta-production"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        let currentUser = null;
+        let authToken = null;
+
+        // Check auth state on load
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                // Get token and verify SUPER_ADMIN role
+                const tokenResult = await user.getIdTokenResult();
+                if (tokenResult.claims.role === 'SUPER_ADMIN') {
+                    currentUser = user;
+                    authToken = await user.getIdToken();
+                    showDashboard();
+                } else {
+                    showError('Access denied. SUPER_ADMIN role required.');
+                    auth.signOut();
+                }
+            } else {
+                showLogin();
+            }
+        });
+
+        // Login
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const btn = document.getElementById('loginBtn');
+            const errorEl = document.getElementById('loginError');
+
+            btn.disabled = true;
+            btn.textContent = 'Signing in...';
+            errorEl.style.display = 'none';
+
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+            } catch (error) {
+                errorEl.textContent = error.message;
+                errorEl.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = 'Sign In';
+            }
+        });
+
+        function showLogin() {
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('dashboard').classList.remove('active');
+        }
+
+        function showDashboard() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('dashboard').classList.add('active');
+            document.getElementById('userEmail').textContent = currentUser.email;
+            loadTenants();
+        }
+
+        function showError(msg) {
+            document.getElementById('loginError').textContent = msg;
+            document.getElementById('loginError').style.display = 'block';
+        }
+
+        function logout() {
+            auth.signOut();
+        }
+
+        // Load tenants
+        async function loadTenants() {
+            const listEl = document.getElementById('tenantList');
+            listEl.innerHTML = '<div class="loading">Loading tenants...</div>';
+
+            try {
+                const res = await fetch('/api/platform/tenants', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await res.json();
+
+                if (!data.success) {
+                    listEl.innerHTML = `<div class="error-msg">${data.error}</div>`;
+                    return;
+                }
+
+                if (data.data.length === 0) {
+                    listEl.innerHTML = `
+                        <div class="empty-state">
+                            <p>No tenants yet</p>
+                            <button class="btn-create" onclick="openCreateModal()">Create your first tenant</button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                listEl.innerHTML = data.data.map(tenant => `
+                    <div class="tenant-card">
+                        <div class="tenant-info">
+                            <h3>${escapeHtml(tenant.name)}</h3>
+                            <span class="tenant-slug">/${tenant.slug}</span>
+                            <div class="tenant-meta">
+                                <span>Plan: ${tenant.plan}</span>
+                                <span>Created: ${new Date(tenant.createdAt).toLocaleDateString()}</span>
+                            </div>
+                        </div>
+                        <div class="tenant-actions">
+                            <span class="status-badge ${tenant.isActive ? 'active' : 'inactive'}">
+                                ${tenant.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                            <button class="btn-toggle" onclick="toggleStatus('${tenant.id}', ${!tenant.isActive})">
+                                ${tenant.isActive ? 'Deactivate' : 'Activate'}
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                listEl.innerHTML = `<div class="error-msg">Failed to load tenants</div>`;
+            }
+        }
+
+        // Toggle tenant status
+        async function toggleStatus(id, isActive) {
+            try {
+                const res = await fetch(`/api/platform/tenants/${id}/status`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ isActive })
+                });
+
+                if (res.ok) {
+                    loadTenants();
+                }
+            } catch (error) {
+                alert('Failed to update status');
+            }
+        }
+
+        // Create tenant modal
+        function openCreateModal() {
+            document.getElementById('createModal').classList.add('active');
+            document.getElementById('createForm').reset();
+            document.getElementById('createError').style.display = 'none';
+        }
+
+        function closeCreateModal() {
+            document.getElementById('createModal').classList.remove('active');
+        }
+
+        document.getElementById('createForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const btn = document.getElementById('createBtn');
+            const errorEl = document.getElementById('createError');
+
+            const payload = {
+                name: document.getElementById('tenantName').value,
+                slug: document.getElementById('tenantSlug').value.toLowerCase(),
+                adminEmail: document.getElementById('adminEmail').value,
+                adminName: document.getElementById('adminName').value || undefined
+            };
+
+            btn.disabled = true;
+            btn.textContent = 'Creating...';
+            errorEl.style.display = 'none';
+
+            try {
+                const res = await fetch('/api/platform/tenants', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+
+                if (!data.success) {
+                    errorEl.textContent = data.error;
+                    errorEl.style.display = 'block';
+                    btn.disabled = false;
+                    btn.textContent = 'Create Tenant';
+                    return;
+                }
+
+                closeCreateModal();
+                loadTenants();
+                alert(`Tenant created! Admin will receive password reset email at ${payload.adminEmail}`);
+
+            } catch (error) {
+                errorEl.textContent = 'Failed to create tenant';
+                errorEl.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = 'Create Tenant';
+            }
+        });
+
+        // Auto-generate slug from name
+        document.getElementById('tenantName').addEventListener('input', (e) => {
+            const slugInput = document.getElementById('tenantSlug');
+            if (!slugInput.dataset.manual) {
+                slugInput.value = e.target.value
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '-')
+                    .replace(/^-|-$/g, '');
+            }
+        });
+
+        document.getElementById('tenantSlug').addEventListener('input', () => {
+            document.getElementById('tenantSlug').dataset.manual = 'true';
+        });
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+
+</html>

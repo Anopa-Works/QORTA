@@ -33,6 +33,8 @@ const getDb = () => {
 // Collection names for multi-tenant structure
 const COLLECTIONS = {
     TENANTS: 'tenants',
+    TENANT_SETTINGS: 'tenantSettings',
+    ADMINS: 'admins',
     MENU_ITEMS: 'menuItems',
     CATEGORIES: 'categories',
     ORDERS: 'orders'

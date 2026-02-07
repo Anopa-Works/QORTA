@@ -6,6 +6,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>QORTA - Menu</title>
   <meta name="description" content="Browse our menu and place your order">
+  <meta name="theme-color" content="#363636">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/logos/q-mark.png">
   <link rel="stylesheet" href="/css/main.css?v=5">
   <link rel="stylesheet" href="/css/menu.css?v=5">
   <link rel="stylesheet" href="/css/loader.css?v=6">
@@ -172,11 +177,12 @@
     </div>
   </nav>
 
-  <!-- Scripts (load order matters: api → cart → menu → mobile-nav) -->
+  <!-- Scripts (load order matters: api → cart → menu → mobile-nav → pwa) -->
   <script src="/js/api.js?v=5"></script>
   <script src="/js/cart.js?v=5"></script>
   <script src="/js/menu.js?v=5"></script>
   <script src="/js/mobile-nav.js?v=5"></script>
+  <script src="/js/pwa.js?v=1"></script>
 
 </body>
 </html>

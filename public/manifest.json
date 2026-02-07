@@ -1,0 +1,38 @@
+{
+  "name": "QORTA - Restaurant Ordering",
+  "short_name": "QORTA",
+  "description": "Order food from your favorite restaurant",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#363636",
+  "theme_color": "#363636",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/logos/q-mark.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logos/q-mark.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["food", "lifestyle"],
+  "shortcuts": [
+    {
+      "name": "View Menu",
+      "url": "/",
+      "icons": [{ "src": "/logos/q-mark.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Track Order",
+      "url": "/track.html",
+      "icons": [{ "src": "/logos/q-mark.png", "sizes": "96x96" }]
+    }
+  ]
+}
