@@ -7,27 +7,41 @@ function getRedirectUrl() {
     const params = new URLSearchParams(window.location.search);
     const redirect = params.get('redirect');
 
+    // DEBUG: Log everything
+    console.log('[DEBUG] getRedirectUrl called');
+    console.log('[DEBUG] window.location.pathname:', window.location.pathname);
+    console.log('[DEBUG] redirect param:', redirect);
+
     // ALWAYS try to extract slug from current URL path first (most reliable)
     // e.g., /chicken-matty/login -> chicken-matty
     const pathParts = window.location.pathname.split('/').filter(p => p);
+    console.log('[DEBUG] pathParts:', pathParts);
+
     let slug = null;
 
     if (pathParts.length > 0 && !['login', 'admin', 'kitchen', 'platform'].includes(pathParts[0])) {
         slug = pathParts[0];
+        console.log('[DEBUG] Extracted slug from URL:', slug);
         // Also update localStorage for consistency
         localStorage.setItem('qorta_tenant_slug', slug);
+    } else {
+        console.log('[DEBUG] Could not extract slug from URL, pathParts[0]:', pathParts[0]);
     }
 
     // Fall back to localStorage only if URL extraction failed
     if (!slug) {
         slug = localStorage.getItem('qorta_tenant_slug');
+        console.log('[DEBUG] Fallback to localStorage slug:', slug);
     }
 
     // Map known page names to tenant-scoped routes
     const pageRoutes = { 'admin.html': 'admin', 'kitchen.html': 'kitchen' };
     const route = (redirect && pageRoutes[redirect]) || 'admin';
 
-    return slug ? `/${slug}/${route}` : `/${route}`;
+    const finalUrl = slug ? `/${slug}/${route}` : `/${route}`;
+    console.log('[DEBUG] Final redirect URL:', finalUrl);
+
+    return finalUrl;
 }
 
 // Map raw auth errors to calm, neutral messages
