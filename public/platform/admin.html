@@ -449,7 +449,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
     <!-- QR Code Library -->
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <script>
         // Firebase config (same as rest of app)
@@ -698,6 +698,8 @@
             document.getElementById('qrModal').classList.remove('active');
         }
 
+        let qrInstance = null;
+
         function generateQR() {
             const type = document.getElementById('qrType').value;
             const tableInput = document.getElementById('tableInput');
@@ -711,26 +713,36 @@
             }
 
             document.getElementById('qrUrl').textContent = url;
-            document.getElementById('qrOutput').innerHTML = '';
+            const output = document.getElementById('qrOutput');
+            output.innerHTML = '';
 
-            QRCode.toCanvas(document.createElement('canvas'), url, { width: 200, margin: 2 }, (err, canvas) => {
-                if (!err) {
-                    document.getElementById('qrOutput').appendChild(canvas);
-                }
+            // Generate QR using qrcodejs
+            qrInstance = new QRCode(output, {
+                text: url,
+                width: 200,
+                height: 200,
+                colorDark: '#000000',
+                colorLight: '#ffffff'
             });
         }
 
         function downloadQR() {
+            const img = document.querySelector('#qrOutput img');
             const canvas = document.querySelector('#qrOutput canvas');
+            const type = document.getElementById('qrType').value;
+            const tableNum = document.getElementById('tableNumber').value;
+            const filename = type === 'table'
+                ? `${currentQRSlug}-table-${tableNum}.png`
+                : `${currentQRSlug}-menu.png`;
+
+            const link = document.createElement('a');
+            link.download = filename;
+
             if (canvas) {
-                const link = document.createElement('a');
-                const type = document.getElementById('qrType').value;
-                const tableNum = document.getElementById('tableNumber').value;
-                const filename = type === 'table'
-                    ? `${currentQRSlug}-table-${tableNum}.png`
-                    : `${currentQRSlug}-menu.png`;
-                link.download = filename;
                 link.href = canvas.toDataURL();
+                link.click();
+            } else if (img) {
+                link.href = img.src;
                 link.click();
             }
         }
