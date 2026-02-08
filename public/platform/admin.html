@@ -415,9 +415,41 @@
         </div>
     </div>
 
+    <!-- QR Code Modal -->
+    <div id="qrModal" class="modal-overlay" onclick="if(event.target===this)closeQRModal()">
+        <div class="modal">
+            <h2 class="modal-title">QR Code</h2>
+            <p id="qrTenantName" style="color:#888;margin-bottom:16px;"></p>
+
+            <div style="margin-bottom:16px;">
+                <label class="form-label">Type</label>
+                <select id="qrType" onchange="generateQR()" class="form-input">
+                    <option value="menu">Menu QR</option>
+                    <option value="table">Table QR</option>
+                </select>
+            </div>
+
+            <div id="tableInput" style="display:none;margin-bottom:16px;">
+                <label class="form-label">Table Number</label>
+                <input type="number" id="tableNumber" min="1" value="1" oninput="generateQR()" class="form-input">
+            </div>
+
+            <div id="qrOutput" style="text-align:center;padding:20px;background:#fff;border-radius:8px;margin-bottom:16px;"></div>
+
+            <p id="qrUrl" style="font-size:12px;color:#666;word-break:break-all;margin-bottom:16px;text-align:center;"></p>
+
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeQRModal()">Close</button>
+                <button type="button" class="btn-submit" onclick="downloadQR()">Download PNG</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+    <!-- QR Code Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 
     <script>
         // Firebase config (same as rest of app)
@@ -534,6 +566,9 @@
                             <span class="status-badge ${tenant.isActive ? 'active' : 'inactive'}">
                                 ${tenant.isActive ? 'Active' : 'Inactive'}
                             </span>
+                            <button class="btn-toggle" onclick="openQRModal('${tenant.slug}', '${escapeHtml(tenant.name)}')">
+                                QR
+                            </button>
                             <button class="btn-toggle" onclick="toggleStatus('${tenant.id}', ${!tenant.isActive})">
                                 ${tenant.isActive ? 'Deactivate' : 'Activate'}
                             </button>
@@ -645,6 +680,59 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        // QR Code functions
+        let currentQRSlug = '';
+
+        function openQRModal(slug, name) {
+            currentQRSlug = slug;
+            document.getElementById('qrTenantName').textContent = name;
+            document.getElementById('qrType').value = 'menu';
+            document.getElementById('tableInput').style.display = 'none';
+            document.getElementById('qrModal').classList.add('active');
+            generateQR();
+        }
+
+        function closeQRModal() {
+            document.getElementById('qrModal').classList.remove('active');
+        }
+
+        function generateQR() {
+            const type = document.getElementById('qrType').value;
+            const tableInput = document.getElementById('tableInput');
+
+            tableInput.style.display = type === 'table' ? 'block' : 'none';
+
+            let url = `${window.location.origin}/${currentQRSlug}/menu`;
+            if (type === 'table') {
+                const tableNum = document.getElementById('tableNumber').value || 1;
+                url += `?table=${tableNum}`;
+            }
+
+            document.getElementById('qrUrl').textContent = url;
+            document.getElementById('qrOutput').innerHTML = '';
+
+            QRCode.toCanvas(document.createElement('canvas'), url, { width: 200, margin: 2 }, (err, canvas) => {
+                if (!err) {
+                    document.getElementById('qrOutput').appendChild(canvas);
+                }
+            });
+        }
+
+        function downloadQR() {
+            const canvas = document.querySelector('#qrOutput canvas');
+            if (canvas) {
+                const link = document.createElement('a');
+                const type = document.getElementById('qrType').value;
+                const tableNum = document.getElementById('tableNumber').value;
+                const filename = type === 'table'
+                    ? `${currentQRSlug}-table-${tableNum}.png`
+                    : `${currentQRSlug}-menu.png`;
+                link.download = filename;
+                link.href = canvas.toDataURL();
+                link.click();
+            }
         }
     </script>
 </body>
