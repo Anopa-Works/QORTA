@@ -10,10 +10,15 @@ class Category {
         this.id = data.id;
         this.tenantId = data.tenantId;
         this.name = data.name;                    // "Burgers", "Sides", "Drinks"
-        this.slug = data.slug;                    // "burgers", "sides", "drinks"
+        this.slug = data.slug || this.generateSlug(data.name);  // Auto-generate if not provided
         this.order = data.order ?? 0;             // Display order
         this.isActive = data.isActive ?? true;
         this.createdAt = data.createdAt ?? new Date();
+    }
+
+    generateSlug(name) {
+        if (!name) return '';
+        return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     }
 
     toFirestore() {
