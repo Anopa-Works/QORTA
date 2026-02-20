@@ -521,13 +521,19 @@
             if (user) {
                 // Force token refresh to get latest custom claims
                 const tokenResult = await user.getIdTokenResult(true);
+                console.log('Firebase ID Token Claims:', tokenResult.claims);
+                console.log('Role claim:', tokenResult.claims.role);
+                console.log('Expected: SUPER_ADMIN');
+
                 if (tokenResult.claims.role === 'SUPER_ADMIN') {
                     currentUser = user;
                     authToken = tokenResult.token;
                     showDashboard();
                 } else {
-                    showError('Access denied. SUPER_ADMIN role required.');
-                    auth.signOut();
+                    const errorMsg = `Access denied. Current role: ${tokenResult.claims.role || 'none'}. Required: SUPER_ADMIN`;
+                    console.error(errorMsg);
+                    showError(errorMsg);
+                    setTimeout(() => auth.signOut(), 3000);
                 }
             } else {
                 showLogin();
@@ -764,10 +770,14 @@
 
         // Service Mode toggle
         async function toggleServiceMode(tenantId, enabled) {
-            try {
-                const tableCountInput = document.getElementById(`tableCount-${tenantId}`);
-                const tableCount = parseInt(tableCountInput.value) || 10;
+            const checkbox = document.getElementById(`serviceMode-${tenantId}`);
+            const tableCountInput = document.getElementById(`tableCount-${tenantId}`);
+            const tableCount = parseInt(tableCountInput.value) || 10;
 
+            // Disable during request to prevent double-clicks
+            checkbox.disabled = true;
+
+            try {
                 const res = await fetch(`/api/platform/tenants/${tenantId}/service-mode`, {
                     method: 'PATCH',
                     headers: {
@@ -781,29 +791,41 @@
                 });
 
                 if (res.ok) {
+                    // Update UI optimistically without full reload
                     tableCountInput.disabled = !enabled;
-                    loadTenants();
-                    alert(`Service mode ${enabled ? 'enabled' : 'disabled'} successfully`);
+                    checkbox.disabled = false;
+
+                    // Silently reload tenant list in background to update badge
+                    setTimeout(() => loadTenants(), 500);
                 } else {
                     const data = await res.json();
-                    alert(`Failed to toggle service mode: ${data.message || 'Unknown error'}`);
+                    console.error('Failed to toggle service mode:', data.error);
                     // Revert checkbox
-                    document.getElementById(`serviceMode-${tenantId}`).checked = !enabled;
+                    checkbox.checked = !enabled;
+                    checkbox.disabled = false;
                 }
             } catch (error) {
-                alert('Failed to toggle service mode');
+                console.error('Failed to toggle service mode:', error);
                 // Revert checkbox
-                document.getElementById(`serviceMode-${tenantId}`).checked = !enabled;
+                checkbox.checked = !enabled;
+                checkbox.disabled = false;
             }
         }
 
         // Update table count
         async function updateTableCount(tenantId, tableCount) {
             const count = parseInt(tableCount);
+            const input = document.getElementById(`tableCount-${tenantId}`);
+
             if (count < 1 || count > 100) {
-                alert('Table count must be between 1 and 100');
+                console.error('Table count must be between 1 and 100');
+                // Revert to previous valid value
+                input.value = 10;
                 return;
             }
+
+            // Disable during request
+            input.disabled = true;
 
             try {
                 const checkbox = document.getElementById(`serviceMode-${tenantId}`);
@@ -822,12 +844,14 @@
                 });
 
                 if (res.ok) {
-                    alert(`Table count updated to ${count}`);
+                    input.disabled = !enabled;
                 } else {
-                    alert('Failed to update table count');
+                    console.error('Failed to update table count');
+                    input.disabled = !enabled;
                 }
             } catch (error) {
-                alert('Failed to update table count');
+                console.error('Failed to update table count:', error);
+                input.disabled = !enabled;
             }
         }
 
