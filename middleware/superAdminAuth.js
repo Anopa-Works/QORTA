@@ -3,7 +3,7 @@
  * Verifies Firebase ID tokens and checks for SUPER_ADMIN role
  */
 
-const admin = require('firebase-admin');
+const { admin, initializeFirebase } = require('../config/firebase');
 const { logger } = require('../utils/logger');
 
 /**
@@ -14,6 +14,9 @@ const { logger } = require('../utils/logger');
  */
 const superAdminAuth = async (req, res, next) => {
     try {
+        // Ensure Firebase is initialized
+        initializeFirebase();
+
         const authHeader = req.headers.authorization;
 
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
