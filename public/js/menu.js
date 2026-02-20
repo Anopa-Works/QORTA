@@ -86,14 +86,144 @@ function applyServiceModeRestrictions() {
             mobileNavCart.style.display = 'none';
         }
 
-        // Add service mode banner
-        const menuHeader = document.querySelector('.app-header');
-        if (menuHeader && !document.querySelector('.service-mode-banner')) {
-            const banner = document.createElement('div');
-            banner.className = 'service-mode-banner';
-            banner.innerHTML = '<strong>Service Mode:</strong> Orders are placed by staff. Menu is for reference only.';
-            menuHeader.insertAdjacentElement('afterend', banner);
+        // Replace entire menu content with table selection UI
+        showServiceModeUI();
+    }
+}
+
+// Global variable to track selected table
+let selectedTableNumber = null;
+
+// Show service mode UI (table selection + call waiter)
+function showServiceModeUI() {
+    const mainContent = document.getElementById('mainContent');
+    if (!mainContent) return;
+
+    const tableCount = window.restaurantConfig?.serviceMode?.tableCount || 10;
+
+    // Build table selection grid
+    let tableButtons = '';
+    for (let i = 1; i <= tableCount; i++) {
+        tableButtons += `
+            <button class="table-btn" data-table="${i}" onclick="selectTable(${i})">
+                <div class="table-number">Table ${i}</div>
+            </button>
+        `;
+    }
+
+    mainContent.innerHTML = `
+        <div class="service-mode-container">
+            <div class="service-mode-header">
+                <h1>Welcome!</h1>
+                <p>Please select your table number to request service</p>
+            </div>
+
+            <div class="table-grid">
+                ${tableButtons}
+            </div>
+
+            <div class="selected-table-info" id="selectedTableInfo" style="display: none;">
+                <p>Selected: <strong id="selectedTableDisplay">Table 1</strong></p>
+                <button class="call-waiter-btn" id="callWaiterBtn" onclick="callWaiter()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                    </svg>
+                    Call Waiter
+                </button>
+            </div>
+
+            <div class="service-mode-footer">
+                <p>A member of our staff will assist you shortly</p>
+            </div>
+        </div>
+    `;
+}
+
+// Handle table selection
+function selectTable(tableNumber) {
+    selectedTableNumber = tableNumber;
+
+    // Update visual selection
+    document.querySelectorAll('.table-btn').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+    const selectedBtn = document.querySelector(`[data-table="${tableNumber}"]`);
+    if (selectedBtn) {
+        selectedBtn.classList.add('selected');
+    }
+
+    // Show call waiter section
+    const selectedInfo = document.getElementById('selectedTableInfo');
+    const selectedDisplay = document.getElementById('selectedTableDisplay');
+    if (selectedInfo && selectedDisplay) {
+        selectedDisplay.textContent = `Table ${tableNumber}`;
+        selectedInfo.style.display = 'block';
+    }
+}
+
+// Call waiter function
+async function callWaiter() {
+    if (!selectedTableNumber) {
+        showNotification('Please select your table first');
+        return;
+    }
+
+    const btn = document.getElementById('callWaiterBtn');
+    if (!btn) return;
+
+    // Disable button during request
+    btn.disabled = true;
+    btn.innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spinner">
+            <circle cx="12" cy="12" r="10"/>
+        </svg>
+        Calling...
+    `;
+
+    try {
+        const response = await api.request('/service-requests', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                tableNumber: selectedTableNumber,
+                message: `Service request - Table ${selectedTableNumber}`
+            })
+        });
+
+        if (response.success) {
+            // Show success message
+            btn.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+                Waiter Notified!
+            `;
+            btn.style.background = '#10b981';
+
+            // Reset after 3 seconds
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerHTML = `
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                    </svg>
+                    Call Waiter
+                `;
+                btn.style.background = '';
+            }, 3000);
         }
+    } catch (error) {
+        showNotification('Failed to call waiter. Please try again.');
+        btn.disabled = false;
+        btn.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+            </svg>
+            Call Waiter
+        `;
     }
 }
 

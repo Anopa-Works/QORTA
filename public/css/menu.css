@@ -643,3 +643,149 @@
 .cart-float.pulse {
     animation: cartPulse 0.3s ease;
 }
+
+/* ================== SERVICE MODE UI ================== */
+
+.service-mode-container {
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 0 20px;
+    text-align: center;
+}
+
+.service-mode-header h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin-bottom: 12px;
+}
+
+.service-mode-header p {
+    font-size: 16px;
+    color: var(--color-text-secondary);
+    margin-bottom: 32px;
+}
+
+.table-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+}
+
+.table-btn {
+    background: white;
+    border: 2px solid var(--color-border);
+    border-radius: 12px;
+    padding: 24px 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.table-btn:hover {
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.table-btn.selected {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.table-number {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.selected-table-info {
+    background: #F8F9FA;
+    padding: 24px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+}
+
+.selected-table-info p {
+    font-size: 16px;
+    color: var(--color-text-secondary);
+    margin-bottom: 16px;
+}
+
+.selected-table-info strong {
+    color: var(--color-text-primary);
+    font-weight: 600;
+}
+
+.call-waiter-btn {
+    background: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: 100px;
+    padding: 16px 32px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.call-waiter-btn:hover:not(:disabled) {
+    background: #000;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.call-waiter-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.call-waiter-btn svg.spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.service-mode-footer {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--color-border);
+}
+
+.service-mode-footer p {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .table-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 12px;
+    }
+
+    .table-btn {
+        padding: 20px 12px;
+    }
+
+    .table-number {
+        font-size: 16px;
+    }
+
+    .service-mode-header h1 {
+        font-size: 28px;
+    }
+}
