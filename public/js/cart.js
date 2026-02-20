@@ -153,6 +153,12 @@ async function confirmOrder() {
     const items = cart.getItems();
     if (items.length === 0) return;
 
+    // Block checkout in service mode
+    if (window.restaurantConfig?.mode === 'service') {
+        alert('Service mode active. Orders can only be placed by staff.');
+        return;
+    }
+
     const btn = document.getElementById('confirmOrderBtn');
     btn.disabled = true;
     btn.innerHTML = 'Processing...';

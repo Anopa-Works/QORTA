@@ -71,19 +71,8 @@ async function init() {
   document.addEventListener('click', initAudio, { once: true });
 
   try {
+    // Optional auth for service mode - kitchen can be viewed without login
     const user = await waitForAuth();
-
-    // Check for explicit kitchen access flag (force login session)
-    if (!sessionStorage.getItem('kitchen_access_granted')) {
-      // Force re-authentication even if firebase user exists
-      window.location.href = 'admin-login.html?redirect=kitchen.html&reauth=true';
-      return;
-    }
-
-    if (!user) {
-      window.location.href = 'admin-login.html?redirect=kitchen.html&reauth=true';
-      return;
-    }
 
     if (authLoading) authLoading.style.display = 'none';
 
@@ -94,7 +83,12 @@ async function init() {
     setupSSE();
   } catch (error) {
     // Error:('Initialization error:', error);
-    window.location.href = 'admin-login.html?redirect=kitchen.html';
+    if (authLoading) authLoading.style.display = 'none';
+    // Still try to load kitchen even if auth fails
+    updateClock();
+    setInterval(updateClock, 1000);
+    await loadKitchenBoard();
+    setupSSE();
   }
 }
 
@@ -124,7 +118,10 @@ async function loadKitchenBoard() {
 // Setup Server-Sent Events for real-time updates
 async function setupSSE() {
   try {
-    const token = await firebase.auth().currentUser.getIdToken();
+    // Optional auth for service mode - check if user exists
+    const currentUser = firebase.auth().currentUser;
+    const token = currentUser ? await currentUser.getIdToken() : null;
+
     eventSource = api.createKitchenStream(
       token,
       (data) => handleSSEMessage(data),
@@ -134,7 +131,7 @@ async function setupSSE() {
       }
     );
   } catch (error) {
-    // Error:('Failed to get token for SSE:', error);
+    // Error:('Failed to setup SSE:', error);
     setTimeout(setupSSE, 5000);
   }
 }
@@ -209,8 +206,17 @@ function createOrderCard(order, status) {
   let customerInfo = '';
   if (order.customerName && order.customerName !== 'Guest') {
     customerInfo = `<div class="customer-name">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>    
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         ${order.customerName}
+    </div>`;
+  }
+
+  // Build waiter info section
+  let waiterInfo = '';
+  if (order.waiterName) {
+    waiterInfo = `<div class="waiter-name">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Server: ${order.waiterName}
     </div>`;
   }
 
@@ -252,6 +258,7 @@ function createOrderCard(order, status) {
       ${badgesHtml.length ? `<div class="order-meta">${badgesHtml.join('')}</div>` : ''}
 
       ${customerInfo}
+      ${waiterInfo}
       ${deliveryInfo}
       
       <div class="order-items-list">

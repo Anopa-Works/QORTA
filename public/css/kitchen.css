@@ -434,6 +434,21 @@ body.kitchen-page {
     font-weight: 600;
 }
 
+/* Waiter Info */
+.waiter-name {
+    font-size: 13px;
+    color: #6B46C1;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    background: #FAF5FF;
+    padding: 6px 10px;
+    border-radius: 6px;
+    width: fit-content;
+}
+
 /* Delivery Details */
 .delivery-info {
     background: #F8FAFC;

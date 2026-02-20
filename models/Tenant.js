@@ -13,7 +13,11 @@ class Tenant {
         this.settings = {
             taxRate: data.settings?.taxRate ?? 0.08,
             currency: data.settings?.currency ?? 'USD',
-            timezone: data.settings?.timezone ?? 'UTC'
+            timezone: data.settings?.timezone ?? 'UTC',
+            serviceMode: {
+                enabled: data.settings?.serviceMode?.enabled ?? false,
+                tableCount: data.settings?.serviceMode?.tableCount ?? 10
+            }
         };
         this.isActive = data.isActive ?? true;
         this.createdAt = data.createdAt ?? new Date();

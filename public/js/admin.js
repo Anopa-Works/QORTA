@@ -36,6 +36,9 @@ async function init() {
         // Wire tenant-scoped Kitchen Board link
         document.getElementById('kitchenLink').href = `/${api.tenantSlug}/kitchen`;
 
+        // Check and display service mode status
+        await checkServiceMode();
+
         // Load orders first (default view)
         await loadOrders();
         await loadCategories();
@@ -54,6 +57,22 @@ async function init() {
 async function handleLogout() {
     await firebase.auth().signOut();
     window.location.href = 'admin-login.html';
+}
+
+// Check service mode status and display badge
+async function checkServiceMode() {
+    try {
+        const response = await api.request('/config');
+        if (response.success && response.data) {
+            const { mode } = response.data;
+            const indicator = document.getElementById('serviceModeIndicator');
+            if (mode === 'service' && indicator) {
+                indicator.style.display = 'inline-flex';
+            }
+        }
+    } catch (error) {
+        // Silently fail - service mode indicator is not critical
+    }
 }
 
 // ================== TAB SWITCHING ==================

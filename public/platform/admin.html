@@ -242,6 +242,11 @@
             color: #ef4444;
         }
 
+        .status-badge.service-mode {
+            background: rgba(124, 58, 237, 0.2);
+            color: #7c3aed;
+        }
+
         .btn-toggle {
             padding: 6px 12px;
             background: transparent;
@@ -255,6 +260,52 @@
         .btn-toggle:hover {
             color: #fff;
             border-color: #666;
+        }
+
+        .service-mode-controls {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #333;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .service-mode-label {
+            font-size: 13px;
+            color: #888;
+        }
+
+        .service-mode-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .table-count-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .table-count-control label {
+            font-size: 13px;
+            color: #888;
+        }
+
+        .table-count-control input {
+            width: 60px;
+            padding: 6px 8px;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .table-count-control input:disabled {
+            opacity: 0.5;
         }
 
         .empty-state {
@@ -552,29 +603,58 @@
                     return;
                 }
 
-                listEl.innerHTML = data.data.map(tenant => `
+                listEl.innerHTML = data.data.map(tenant => {
+                    const serviceMode = tenant.serviceMode || { enabled: false, tableCount: 10 };
+                    return `
                     <div class="tenant-card">
-                        <div class="tenant-info">
-                            <h3>${escapeHtml(tenant.name)}</h3>
-                            <span class="tenant-slug">/${tenant.slug}</span>
-                            <div class="tenant-meta">
-                                <span>Plan: ${tenant.plan}</span>
-                                <span>Created: ${new Date(tenant.createdAt).toLocaleDateString()}</span>
+                        <div style="width: 100%;">
+                            <div style="display: flex; justify-content: space-between; align-items: start;">
+                                <div class="tenant-info">
+                                    <h3>${escapeHtml(tenant.name)}</h3>
+                                    <span class="tenant-slug">/${tenant.slug}</span>
+                                    <div class="tenant-meta">
+                                        <span>Plan: ${tenant.plan}</span>
+                                        <span>Created: ${new Date(tenant.createdAt).toLocaleDateString()}</span>
+                                    </div>
+                                </div>
+                                <div class="tenant-actions">
+                                    <span class="status-badge ${tenant.isActive ? 'active' : 'inactive'}">
+                                        ${tenant.isActive ? 'Active' : 'Inactive'}
+                                    </span>
+                                    ${serviceMode.enabled ? '<span class="status-badge service-mode">Service Mode</span>' : ''}
+                                    <button class="btn-toggle" onclick="openQRModal('${tenant.slug}', '${escapeHtml(tenant.name)}')">
+                                        QR
+                                    </button>
+                                    <button class="btn-toggle" onclick="toggleStatus('${tenant.id}', ${!tenant.isActive})">
+                                        ${tenant.isActive ? 'Deactivate' : 'Activate'}
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="service-mode-controls">
+                                <span class="service-mode-label">Service Mode:</span>
+                                <div class="service-mode-toggle">
+                                    <input type="checkbox"
+                                        id="serviceMode-${tenant.id}"
+                                        ${serviceMode.enabled ? 'checked' : ''}
+                                        onchange="toggleServiceMode('${tenant.id}', this.checked)">
+                                    <label for="serviceMode-${tenant.id}" style="font-size: 13px; color: #888;">
+                                        ${serviceMode.enabled ? 'Enabled' : 'Disabled'}
+                                    </label>
+                                </div>
+                                <div class="table-count-control">
+                                    <label>Tables:</label>
+                                    <input type="number"
+                                        min="1"
+                                        max="100"
+                                        value="${serviceMode.tableCount}"
+                                        id="tableCount-${tenant.id}"
+                                        ${!serviceMode.enabled ? 'disabled' : ''}
+                                        onchange="updateTableCount('${tenant.id}', this.value)">
+                                </div>
                             </div>
                         </div>
-                        <div class="tenant-actions">
-                            <span class="status-badge ${tenant.isActive ? 'active' : 'inactive'}">
-                                ${tenant.isActive ? 'Active' : 'Inactive'}
-                            </span>
-                            <button class="btn-toggle" onclick="openQRModal('${tenant.slug}', '${escapeHtml(tenant.name)}')">
-                                QR
-                            </button>
-                            <button class="btn-toggle" onclick="toggleStatus('${tenant.id}', ${!tenant.isActive})">
-                                ${tenant.isActive ? 'Deactivate' : 'Activate'}
-                            </button>
-                        </div>
                     </div>
-                `).join('');
+                `}).join('');
 
             } catch (error) {
                 listEl.innerHTML = `<div class="error-msg">Failed to load tenants</div>`;
@@ -680,6 +760,75 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        // Service Mode toggle
+        async function toggleServiceMode(tenantId, enabled) {
+            try {
+                const tableCountInput = document.getElementById(`tableCount-${tenantId}`);
+                const tableCount = parseInt(tableCountInput.value) || 10;
+
+                const res = await fetch(`/api/platform/tenants/${tenantId}/service-mode`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        enabled,
+                        tableCount
+                    })
+                });
+
+                if (res.ok) {
+                    tableCountInput.disabled = !enabled;
+                    loadTenants();
+                    alert(`Service mode ${enabled ? 'enabled' : 'disabled'} successfully`);
+                } else {
+                    const data = await res.json();
+                    alert(`Failed to toggle service mode: ${data.message || 'Unknown error'}`);
+                    // Revert checkbox
+                    document.getElementById(`serviceMode-${tenantId}`).checked = !enabled;
+                }
+            } catch (error) {
+                alert('Failed to toggle service mode');
+                // Revert checkbox
+                document.getElementById(`serviceMode-${tenantId}`).checked = !enabled;
+            }
+        }
+
+        // Update table count
+        async function updateTableCount(tenantId, tableCount) {
+            const count = parseInt(tableCount);
+            if (count < 1 || count > 100) {
+                alert('Table count must be between 1 and 100');
+                return;
+            }
+
+            try {
+                const checkbox = document.getElementById(`serviceMode-${tenantId}`);
+                const enabled = checkbox.checked;
+
+                const res = await fetch(`/api/platform/tenants/${tenantId}/service-mode`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        enabled,
+                        tableCount: count
+                    })
+                });
+
+                if (res.ok) {
+                    alert(`Table count updated to ${count}`);
+                } else {
+                    alert('Failed to update table count');
+                }
+            } catch (error) {
+                alert('Failed to update table count');
+            }
         }
 
         // QR Code functions

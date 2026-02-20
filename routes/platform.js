@@ -219,24 +219,48 @@ router.post('/tenants', superAdminAuth, async (req, res) => {
 
 /**
  * GET /api/platform/tenants
- * List all tenants
+ * List all tenants with service mode settings
  */
 router.get('/tenants', superAdminAuth, async (req, res) => {
     const db = getDb();
 
     try {
-        const snapshot = await db.collection('tenants')
+        const tenantsSnapshot = await db.collection('tenants')
             .orderBy('createdAt', 'desc')
             .get();
 
-        const tenants = snapshot.docs.map(doc => ({
-            id: doc.id,
-            slug: doc.data().slug,
-            name: doc.data().name,
-            plan: doc.data().plan || 'tier1',
-            isActive: doc.data().isActive,
-            createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || null
-        }));
+        // Fetch tenant settings for all tenants
+        const tenantIds = tenantsSnapshot.docs.map(doc => doc.id);
+        const settingsPromises = tenantIds.map(id =>
+            db.collection('tenantSettings').doc(id).get()
+        );
+        const settingsSnapshots = await Promise.all(settingsPromises);
+
+        // Map settings by tenant ID
+        const settingsMap = {};
+        settingsSnapshots.forEach((doc, index) => {
+            if (doc.exists) {
+                settingsMap[tenantIds[index]] = doc.data();
+            }
+        });
+
+        const tenants = tenantsSnapshot.docs.map(doc => {
+            const tenantData = doc.data();
+            const settings = settingsMap[doc.id] || {};
+
+            return {
+                id: doc.id,
+                slug: tenantData.slug,
+                name: tenantData.name,
+                plan: tenantData.plan || 'tier1',
+                isActive: tenantData.isActive,
+                serviceMode: {
+                    enabled: settings.serviceMode?.enabled || false,
+                    tableCount: settings.serviceMode?.tableCount || 10
+                },
+                createdAt: tenantData.createdAt?.toDate?.()?.toISOString() || null
+            };
+        });
 
         res.json({
             success: true,
@@ -316,6 +340,90 @@ router.patch('/tenants/:id/status', superAdminAuth, async (req, res) => {
         res.status(500).json({
             success: false,
             error: 'Failed to update tenant status'
+        });
+    }
+});
+
+/**
+ * PATCH /api/platform/tenants/:id/service-mode
+ * Toggle service mode for a tenant (super-admin only)
+ *
+ * Body: { enabled: boolean, tableCount?: number }
+ */
+router.patch('/tenants/:id/service-mode', superAdminAuth, async (req, res) => {
+    const { id } = req.params;
+    const { enabled, tableCount } = req.body;
+
+    // Validation
+    if (typeof enabled !== 'boolean') {
+        return res.status(400).json({
+            success: false,
+            error: 'enabled must be a boolean'
+        });
+    }
+
+    if (tableCount !== undefined && (typeof tableCount !== 'number' || tableCount < 1 || tableCount > 100)) {
+        return res.status(400).json({
+            success: false,
+            error: 'tableCount must be a number between 1 and 100'
+        });
+    }
+
+    const db = getDb();
+    const settingsRef = db.collection('tenantSettings').doc(id);
+
+    try {
+        const doc = await settingsRef.get();
+
+        if (!doc.exists) {
+            return res.status(404).json({
+                success: false,
+                error: 'Tenant settings not found'
+            });
+        }
+
+        // Update service mode settings
+        const updateData = {
+            'serviceMode.enabled': enabled,
+            updatedAt: new Date()
+        };
+
+        if (tableCount !== undefined) {
+            updateData['serviceMode.tableCount'] = tableCount;
+        }
+
+        await settingsRef.update(updateData);
+
+        logger.info('Service mode updated by super-admin', {
+            requestId: req.requestId,
+            tenantId: id,
+            meta: {
+                enabled,
+                tableCount,
+                updatedBy: req.user.email
+            }
+        });
+
+        const currentData = doc.data();
+        res.json({
+            success: true,
+            message: 'Service mode updated',
+            serviceMode: {
+                enabled,
+                tableCount: tableCount || currentData.serviceMode?.tableCount || 10
+            }
+        });
+
+    } catch (error) {
+        logger.error('Failed to update service mode', {
+            requestId: req.requestId,
+            tenantId: id,
+            meta: { error: error.message }
+        });
+
+        res.status(500).json({
+            success: false,
+            error: 'Failed to update service mode'
         });
     }
 });

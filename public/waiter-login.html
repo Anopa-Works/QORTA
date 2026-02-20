@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QORTA Waiter Login</title>
+    <meta name="description" content="Waiter login for QORTA service mode">
+    <base href="/">
+    <link rel="stylesheet" href="css/main.css?v=5">
+    <link rel="stylesheet" href="css/admin-login.css?v=5">
+</head>
+<body>
+    <main class="login-container">
+        <!-- Brand -->
+        <div class="login-brand">
+            <h1>QORTA</h1>
+            <p class="brand-subtitle">Service Staff Login</p>
+        </div>
+
+        <!-- Form Card -->
+        <div class="login-card">
+            <div class="card-header">
+                <p class="card-primary">Place orders for customers</p>
+                <p class="card-supporting">Log in to access the service dashboard and manage table orders.</p>
+            </div>
+
+            <form id="loginForm" class="login-form" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="email">Email address</label>
+                    <input type="email" id="email" name="email" placeholder="you@email.com" required autocomplete="email">
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="password" name="password" placeholder="••••••••" required autocomplete="current-password">
+                        <button type="button" class="show-btn" onclick="togglePasswordVisibility()">Show</button>
+                    </div>
+                </div>
+
+                <!-- Error Message -->
+                <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+                <!-- Submit -->
+                <button type="submit" class="login-btn" id="loginBtn">Log in</button>
+            </form>
+
+            <p class="staff-note">This login is for service staff only.</p>
+        </div>
+
+        <!-- Success Checkmark Circle -->
+        <div class="success-circle" id="successCircle">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+        </div>
+
+        <!-- Footer -->
+        <p class="login-footer">Powered by QORTA</p>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="js/firebase-config.js?v=5"></script>
+
+    <script>
+        function togglePasswordVisibility() {
+            const input = document.getElementById('password');
+            const btn = document.querySelector('.show-btn');
+            const isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+            btn.textContent = isPassword ? 'Hide' : 'Show';
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            const btn = document.getElementById('loginBtn');
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('errorMessage');
+
+            btn.disabled = true;
+            btn.textContent = 'Logging in...';
+            errorMsg.style.display = 'none';
+
+            try {
+                const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+
+                // Show success animation
+                const successCircle = document.getElementById('successCircle');
+                successCircle.classList.add('show');
+
+                // Extract tenant slug from URL
+                const pathParts = window.location.pathname.split('/').filter(p => p);
+                const slug = pathParts[0];
+
+                // Redirect to waiter dashboard
+                setTimeout(() => {
+                    window.location.href = `/${slug}/waiter`;
+                }, 1200);
+
+            } catch (error) {
+                errorMsg.textContent = error.message || 'Invalid email or password';
+                errorMsg.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = 'Log in';
+            }
+        }
+    </script>
+</body>
+</html>

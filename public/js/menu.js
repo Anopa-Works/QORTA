@@ -39,6 +39,7 @@ async function init() {
         const minWaitPromise = new Promise(resolve => setTimeout(resolve, 2000));
 
         await Promise.all([
+            loadRestaurantConfig(),
             loadCategories(),
             loadFeaturedItems(),
             loadMenuItems(),
@@ -46,6 +47,7 @@ async function init() {
         ]);
         updateCartDisplay();
         setupCartListener();
+        applyServiceModeRestrictions();
 
         // Data ready - hide loader, show content
         hideLoader();
@@ -55,6 +57,43 @@ async function init() {
         showError('Unable to load menu. Please refresh the page.');
         // Still hide loader even on error
         hideLoader();
+    }
+}
+
+// Load restaurant configuration
+async function loadRestaurantConfig() {
+    try {
+        const response = await api.request('/config');
+        window.restaurantConfig = response.data;
+    } catch (error) {
+        // Fail gracefully - default to ordering mode
+        window.restaurantConfig = { mode: 'ordering', taxRate: 0.08 };
+    }
+}
+
+// Apply service mode restrictions if enabled
+function applyServiceModeRestrictions() {
+    if (window.restaurantConfig?.mode === 'service') {
+        // Hide cart float button
+        const cartFloat = document.getElementById('cartFloat');
+        if (cartFloat) {
+            cartFloat.style.display = 'none';
+        }
+
+        // Hide mobile nav cart
+        const mobileNavCart = document.querySelector('.mobile-nav-item.cart');
+        if (mobileNavCart) {
+            mobileNavCart.style.display = 'none';
+        }
+
+        // Add service mode banner
+        const menuHeader = document.querySelector('.app-header');
+        if (menuHeader && !document.querySelector('.service-mode-banner')) {
+            const banner = document.createElement('div');
+            banner.className = 'service-mode-banner';
+            banner.innerHTML = '<strong>Service Mode:</strong> Orders are placed by staff. Menu is for reference only.';
+            menuHeader.insertAdjacentElement('afterend', banner);
+        }
     }
 }
 
@@ -224,7 +263,10 @@ function createMenuItemCard(item, isFeatured = false) {
         <p class="menu-item-description">${item.description || ''}</p>
         <div class="menu-item-footer">
           <span class="menu-item-price">$${item.price.toFixed(2)}</span>
-          <button class="add-to-cart-btn" onclick="event.stopPropagation(); addToCart('${item.id}')">+</button>
+          ${window.restaurantConfig?.mode === 'service'
+            ? '<span class="service-mode-badge">Staff Only</span>'
+            : `<button class="add-to-cart-btn" onclick="event.stopPropagation(); addToCart('${item.id}')">+</button>`
+          }
         </div>
       </div>
     </div>
@@ -308,6 +350,12 @@ function filterByCategory(categorySlug) {
 
 // Add item to cart
 function addToCart(itemId) {
+    // Block adding to cart in service mode
+    if (window.restaurantConfig?.mode === 'service') {
+        showNotification('Service mode active. Orders placed by staff only.', 'info');
+        return;
+    }
+
     const item = menuItems.find(i => i.id === itemId);
     if (!item) return;
 

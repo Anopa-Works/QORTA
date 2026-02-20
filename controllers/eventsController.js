@@ -16,19 +16,20 @@ const { formatOrderForKitchen, formatOrderForTracking } = require('../utils/orde
 // SSE stream for kitchen board
 const kitchenStream = async (req, res) => {
     try {
-        // Verify token from query param (EventSource cannot send custom headers)
+        // Optional auth for Service Mode - kitchen can stream without login
         const { token } = req.query;
-        if (!token) {
-            return res.status(401).json({ success: false, error: 'Authentication required' });
-        }
 
-        const decodedToken = await admin.auth().verifyIdToken(token);
-        const db = admin.firestore();
-        const adminDoc = await db.collection('admins').doc(decodedToken.uid).get();
+        if (token) {
+            // If token provided, verify it
+            const decodedToken = await admin.auth().verifyIdToken(token);
+            const db = admin.firestore();
+            const adminDoc = await db.collection('admins').doc(decodedToken.uid).get();
 
-        if (!adminDoc.exists || adminDoc.data().tenantId !== req.tenant.id) {
-            return res.status(403).json({ success: false, error: 'Access denied' });
+            if (!adminDoc.exists || adminDoc.data().tenantId !== req.tenant.id) {
+                return res.status(403).json({ success: false, error: 'Access denied' });
+            }
         }
+        // If no token, allow unauthenticated access for Service Mode
 
         // Set headers for SSE
         res.setHeader('Content-Type', 'text/event-stream');

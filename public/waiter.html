@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QORTA Waiter Dashboard</title>
+    <meta name="description" content="Service staff dashboard">
+    <base href="/">
+    <link rel="stylesheet" href="css/main.css?v=5">
+    <link rel="stylesheet" href="css/menu.css?v=5">
+    <link rel="stylesheet" href="css/waiter.css?v=5">
+</head>
+<body class="waiter-page">
+    <!-- Auth Loading Overlay -->
+    <div class="auth-loading" id="authLoading">
+        <div>
+            <div class="spinner-large"></div>
+            <p>Verifying access...</p>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="app-header">
+        <div class="logo" id="headerLogo">Restaurant</div>
+        <div class="header-actions">
+            <span class="waiter-name" id="waiterName"></span>
+            <button class="btn-secondary" onclick="handleLogout()">Logout</button>
+        </div>
+    </header>
+
+    <!-- Table Selection Bar -->
+    <div class="table-selector-bar">
+        <div class="table-selector-content">
+            <label for="tableSelect">Select Table:</label>
+            <select id="tableSelect" class="table-select" onchange="handleTableChange()">
+                <option value="">Choose a table...</option>
+            </select>
+            <span class="table-indicator" id="tableIndicator"></span>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="waiter-layout">
+        <!-- Menu Section -->
+        <div class="menu-section">
+            <!-- Category Filter -->
+            <div class="category-nav" id="categoryNav">
+                <button class="category-pill active" onclick="filterCategory('')">All</button>
+            </div>
+
+            <!-- Menu Items Grid -->
+            <div id="menuSections" class="menu-sections"></div>
+        </div>
+
+        <!-- Cart Sidebar -->
+        <aside class="cart-sidebar" id="cartSidebar">
+            <div class="cart-header">
+                <h3>Current Order</h3>
+                <button class="btn-text" onclick="clearCart()">Clear</button>
+            </div>
+
+            <div class="cart-table-info" id="cartTableInfo">
+                <p>No table selected</p>
+            </div>
+
+            <div class="cart-items" id="cartItems">
+                <p class="empty-cart">No items added yet</p>
+            </div>
+
+            <div class="cart-summary">
+                <div class="summary-row">
+                    <span>Subtotal</span>
+                    <span id="cartSubtotal">$0.00</span>
+                </div>
+                <div class="summary-row">
+                    <span>Tax (8%)</span>
+                    <span id="cartTax">$0.00</span>
+                </div>
+                <div class="summary-row total">
+                    <span>Total</span>
+                    <span id="cartTotal">$0.00</span>
+                </div>
+            </div>
+
+            <button class="btn-primary submit-order-btn" id="submitOrderBtn" onclick="submitOrder()" disabled>
+                Submit Order
+            </button>
+        </aside>
+    </div>
+
+    <!-- Success Overlay -->
+    <div class="success-overlay" id="successOverlay">
+        <div class="success-content">
+            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M9 12l2 2 4-4"></path>
+            </svg>
+            <h2>Order Submitted!</h2>
+            <p id="orderNumberText">Order #123</p>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="js/firebase-config.js?v=5"></script>
+    <script src="js/api.js?v=5"></script>
+    <script src="js/waiter.js?v=5"></script>
+</body>
+</html>

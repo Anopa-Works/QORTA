@@ -56,11 +56,34 @@
     justify-content: space-between;
 }
 
+.admin-title-group {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
 .admin-title {
     font-size: 28px;
     font-weight: 800;
     color: var(--color-primary);
     letter-spacing: -0.5px;
+}
+
+.service-mode-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #F3E8FF;
+    color: #7C3AED;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.service-mode-badge svg {
+    stroke-width: 2.5;
 }
 
 .header-actions {

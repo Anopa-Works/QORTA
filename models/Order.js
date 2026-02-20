@@ -33,6 +33,9 @@ class Order {
         this.estimatedPrepTime = data.estimatedPrepTime ?? 5;
         this.timeline = data.timeline ?? [];
         this.pickupLocation = data.pickupLocation ?? '';
+        this.source = data.source ?? 'customer'; // 'customer' | 'waiter'
+        this.waiterId = data.waiterId ?? null;
+        this.waiterName = data.waiterName ?? null;
         this.createdAt = data.createdAt ?? new Date();
         this.updatedAt = data.updatedAt ?? new Date();
     }
@@ -58,6 +61,9 @@ class Order {
             estimatedPrepTime: this.estimatedPrepTime,
             timeline: this.timeline,
             pickupLocation: this.pickupLocation,
+            source: this.source,
+            waiterId: this.waiterId,
+            waiterName: this.waiterName,
             createdAt: this.createdAt,
             updatedAt: this.updatedAt
         };

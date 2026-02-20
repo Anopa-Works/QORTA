@@ -6,7 +6,7 @@
 const express = require('express');
 const router = express.Router({ mergeParams: true });
 const tenantResolver = require('../middleware/tenantResolver');
-const { auth } = require('../middleware/auth');
+const { auth, optionalAuth } = require('../middleware/auth');
 const { validateOrder, validateStatusUpdate } = require('../middleware/validateRequest');
 const {
     createOrder,
@@ -22,16 +22,16 @@ router.use(tenantResolver);
 
 // ================== CUSTOMER ROUTES (PUBLIC) ==================
 
-// Create new order
-router.post('/', validateOrder, createOrder);
+// Create new order - optionalAuth allows waiter orders with token OR customer orders without
+router.post('/', optionalAuth, validateOrder, createOrder);
 
 // Track order by order number (customer view)
 router.get('/track/:orderNumber', trackOrder);
 
 // ================== ADMIN ROUTES (PROTECTED) ==================
 
-// Get kitchen board - PROTECTED
-router.get('/kitchen', auth, getKitchenBoard);
+// Get kitchen board - Open for Service Mode (waiters need to see orders)
+router.get('/kitchen', getKitchenBoard);
 
 // Get all orders (with optional filters)
 router.get('/', auth, getOrders);

@@ -27,6 +27,7 @@ const categoryRoutes = require('./routes/categories');
 const orderRoutes = require('./routes/orders');
 const eventRoutes = require('./routes/events');
 const authRoutes = require('./routes/auth');
+const configRoutes = require('./routes/config');
 
 // Models
 const Tenant = require('./models/Tenant');
@@ -197,6 +198,7 @@ app.use('/api/platform', apiLimiter, platformRoutes);
 app.use('/api/tenants', apiLimiter, tenantRoutes);
 
 // Tenant-scoped API routes with rate limiting
+app.use('/api/:slug/config', apiLimiter, configRoutes);
 app.use('/api/:slug/menu', apiLimiter, menuRoutes);
 app.use('/api/:slug/categories', apiLimiter, categoryRoutes);
 app.use('/api/:slug/orders', orderLimiter, orderRoutes);  // Stricter limit for orders
@@ -216,6 +218,14 @@ app.get('/:slug/kitchen', validateTenantForPage, (req, res) => {
 
 app.get('/:slug/login', validateTenantForPage, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin-login.html'));
+});
+
+app.get('/:slug/waiter-login', validateTenantForPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'waiter-login.html'));
+});
+
+app.get('/:slug/waiter', validateTenantForPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'waiter.html'));
 });
 
 app.get('/:slug/history', validateTenantForPage, (req, res) => {

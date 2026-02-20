@@ -70,6 +70,7 @@ const formatOrderForKitchen = (order) => {
         tableNumber: order.tableNumber,
         deliveryPlatform: order.deliveryPlatform,
         customerName: order.customerName || '',
+        waiterName: order.waiterName || null,
         notes: order.notes || '',
         deliveryAddress: order.deliveryAddress || null,
         deliveryPhone: order.deliveryPhone || null,

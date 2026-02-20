@@ -138,4 +138,108 @@ const optionalAuth = async (req, res, next) => {
     }
 };
 
-module.exports = { auth, optionalAuth };
+/**
+ * Role-based auth middleware factory
+ * Creates middleware that requires specific roles (e.g., 'staff', 'ADMIN')
+ * @param {Array<string>} allowedRoles - Array of allowed roles
+ */
+const requireRole = (allowedRoles) => async (req, res, next) => {
+    try {
+        const authHeader = req.headers.authorization;
+
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({
+                error: 'Unauthorized',
+                message: 'No auth token provided'
+            });
+        }
+
+        const token = authHeader.split('Bearer ')[1];
+
+        // Verify the token with Firebase
+        const decodedToken = await admin.auth().verifyIdToken(token);
+
+        // Attach basic user info
+        req.user = {
+            uid: decodedToken.uid,
+            email: decodedToken.email,
+            emailVerified: decodedToken.email_verified
+        };
+
+        // Fetch Admin Profile
+        const db = admin.firestore();
+        const adminDoc = await db.collection('admins').doc(decodedToken.uid).get();
+
+        if (adminDoc.exists) {
+            req.user.tenantId = adminDoc.data().tenantId;
+            req.user.role = adminDoc.data().role;
+        }
+
+        // Tenant isolation check
+        if (req.tenant && req.user.tenantId) {
+            if (req.tenant.id !== req.user.tenantId) {
+                logger.security('Cross-tenant access attempt blocked', {
+                    requestId: req.requestId,
+                    tenantId: req.tenant.id,
+                    userId: req.user.uid,
+                    meta: {
+                        userEmail: req.user.email,
+                        userTenantId: req.user.tenantId,
+                        targetTenantId: req.tenant.id
+                    }
+                });
+                return res.status(403).json({
+                    error: 'Forbidden',
+                    message: 'You do not have access to this restaurant instance.'
+                });
+            }
+        }
+
+        if (req.tenant && !req.user.tenantId) {
+            return res.status(403).json({
+                error: 'Forbidden',
+                message: 'No restaurant associated with this account.'
+            });
+        }
+
+        // Role check with flexible roles
+        if (!req.user.role || !allowedRoles.includes(req.user.role)) {
+            logger.security('Unauthorized role access attempt', {
+                requestId: req.requestId,
+                tenantId: req.tenant?.id,
+                userId: req.user.uid,
+                meta: {
+                    userEmail: req.user.email,
+                    userRole: req.user.role || 'none',
+                    allowedRoles
+                }
+            });
+            return res.status(403).json({
+                error: 'Forbidden',
+                message: 'You do not have permission to access this resource.'
+            });
+        }
+
+        next();
+    } catch (error) {
+        logger.warn('Authentication failed', {
+            requestId: req.requestId,
+            tenantId: req.tenant?.id,
+            meta: { code: error.code, message: error.message }
+        });
+
+        if (error.code === 'auth/id-token-expired') {
+            return res.status(401).json({
+                error: 'Token expired',
+                message: 'Please login again'
+            });
+        }
+
+        return res.status(401).json({
+            error: 'Unauthorized',
+            message: 'Invalid auth token'
+        });
+    }
+};
+
+module.exports = { auth, optionalAuth, requireRole };

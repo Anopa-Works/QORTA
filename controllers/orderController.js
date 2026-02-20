@@ -23,6 +23,15 @@ const createOrder = async (req, res, next) => {
     try {
         const { items, orderType, tableNumber, customerName, deliveryPlatform, notes, deliveryAddress, deliveryPhone } = req.body;
 
+        // Block customer orders when service mode is enabled
+        if (req.tenant.settings.serviceMode?.enabled && !req.user) {
+            return res.status(403).json({
+                success: false,
+                error: 'Service mode active',
+                message: 'This restaurant is in service mode. Orders can only be placed by staff.'
+            });
+        }
+
         // Enrich items with menu data
         const enrichedItems = await Promise.all(items.map(async (item) => {
             const menuItem = await MenuItem.findById(item.menuItemId);
@@ -61,7 +70,10 @@ const createOrder = async (req, res, next) => {
             subtotal,
             taxRate,
             taxAmount,
-            total
+            total,
+            source: req.user ? 'waiter' : 'customer',
+            waiterId: req.user?.uid || null,
+            waiterName: req.user?.email || null
         };
 
         const order = await Order.create(orderData);
