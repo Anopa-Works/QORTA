@@ -375,43 +375,44 @@ router.patch('/tenants/:id/service-mode', superAdminAuth, async (req, res) => {
     try {
         const doc = await settingsRef.get();
 
-        if (!doc.exists) {
-            return res.status(404).json({
-                success: false,
-                error: 'Tenant settings not found'
-            });
-        }
-
-        // Update service mode settings
-        const updateData = {
-            'serviceMode.enabled': enabled,
-            updatedAt: new Date()
+        // Build service mode settings
+        const serviceModeData = {
+            enabled,
+            tableCount: tableCount !== undefined ? tableCount : (doc.exists ? doc.data().serviceMode?.tableCount : 10) || 10
         };
 
-        if (tableCount !== undefined) {
-            updateData['serviceMode.tableCount'] = tableCount;
+        // If document doesn't exist, create it with default settings
+        if (!doc.exists) {
+            await settingsRef.set({
+                tenantId: id,
+                taxRate: 0.0,
+                serviceMode: serviceModeData,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            });
+        } else {
+            // Update existing document
+            await settingsRef.update({
+                'serviceMode.enabled': enabled,
+                'serviceMode.tableCount': serviceModeData.tableCount,
+                updatedAt: new Date()
+            });
         }
-
-        await settingsRef.update(updateData);
 
         logger.info('Service mode updated by super-admin', {
             requestId: req.requestId,
             tenantId: id,
             meta: {
                 enabled,
-                tableCount,
+                tableCount: serviceModeData.tableCount,
                 updatedBy: req.user.email
             }
         });
 
-        const currentData = doc.data();
         res.json({
             success: true,
             message: 'Service mode updated',
-            serviceMode: {
-                enabled,
-                tableCount: tableCount || currentData.serviceMode?.tableCount || 10
-            }
+            serviceMode: serviceModeData
         });
 
     } catch (error) {
