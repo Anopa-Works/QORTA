@@ -111,9 +111,13 @@ function showCallWaiterButton() {
     document.body.appendChild(button);
 }
 
-// Open table selection modal
+// Open table selection (inline, no modal)
 function openTableSelectionModal() {
     const tableCount = window.restaurantConfig?.serviceMode?.tableCount || 10;
+
+    // Hide the call waiter button
+    const callBtn = document.getElementById('serviceCallWaiterBtn');
+    if (callBtn) callBtn.style.display = 'none';
 
     // Build table grid
     let tableButtons = '';
@@ -125,48 +129,37 @@ function openTableSelectionModal() {
         `;
     }
 
-    // Create modal overlay
-    const modal = document.createElement('div');
-    modal.id = 'tableSelectionModal';
-    modal.className = 'table-selection-modal';
-    modal.innerHTML = `
-        <div class="modal-overlay"></div>
-        <div class="modal-content">
-            <button class="modal-close">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-            </button>
+    // Create inline table selection
+    const panel = document.createElement('div');
+    panel.id = 'tableSelectionPanel';
+    panel.className = 'table-selection-panel';
+    panel.innerHTML = `
+        <div class="panel-header">
             <h2>Select Your Table</h2>
-            <p class="modal-subtitle">Please select your table number</p>
-            <div class="table-selection-grid">
-                ${tableButtons}
-            </div>
+            <button class="panel-close" onclick="closeTableSelectionModal()">×</button>
+        </div>
+        <div class="table-selection-grid">
+            ${tableButtons}
         </div>
     `;
 
-    document.body.appendChild(modal);
+    document.body.appendChild(panel);
 
-    // Close modal when clicking outside (on overlay only)
-    const overlay = modal.querySelector('.modal-overlay');
-    overlay.addEventListener('click', closeTableSelectionModal);
-
-    // Close button handler
-    const closeBtn = modal.querySelector('.modal-close');
-    closeBtn.addEventListener('click', closeTableSelectionModal);
-
-    // Trigger animation
-    setTimeout(() => modal.classList.add('active'), 10);
+    // Slide in animation
+    setTimeout(() => panel.classList.add('active'), 10);
 }
 
-// Close table selection modal
+// Close table selection
 function closeTableSelectionModal() {
-    const modal = document.getElementById('tableSelectionModal');
-    if (modal) {
-        modal.classList.remove('active');
-        setTimeout(() => modal.remove(), 300);
+    const panel = document.getElementById('tableSelectionPanel');
+    if (panel) {
+        panel.classList.remove('active');
+        setTimeout(() => panel.remove(), 300);
     }
+
+    // Show call waiter button again
+    const callBtn = document.getElementById('serviceCallWaiterBtn');
+    if (callBtn) callBtn.style.display = 'flex';
 }
 
 // Select table and send request
@@ -174,10 +167,10 @@ async function selectTableAndCall(tableNumber) {
     selectedTableNumber = tableNumber;
 
     // Update UI to show loading
-    const modal = document.querySelector('.modal-content');
-    if (modal) {
-        modal.innerHTML = `
-            <div class="modal-loading">
+    const panel = document.getElementById('tableSelectionPanel');
+    if (panel) {
+        panel.innerHTML = `
+            <div class="panel-loading">
                 <div class="spinner-large"></div>
                 <h3>Calling waiter for Table ${tableNumber}...</h3>
             </div>
@@ -198,30 +191,29 @@ async function selectTableAndCall(tableNumber) {
 
         if (response.success) {
             // Show success
-            if (modal) {
-                modal.innerHTML = `
-                    <div class="modal-success">
+            if (panel) {
+                panel.innerHTML = `
+                    <div class="panel-success">
                         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
                             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
                             <polyline points="22 4 12 14.01 9 11.01"/>
                         </svg>
                         <h3>Waiter Notified!</h3>
                         <p>A member of our staff will be with you shortly at Table ${tableNumber}</p>
-                        <button class="btn-primary" onclick="closeTableSelectionModal()">Close</button>
                     </div>
                 `;
             }
 
-            // Auto-close after 3 seconds
+            // Auto-close after 2 seconds
             setTimeout(() => {
                 closeTableSelectionModal();
-            }, 3000);
+            }, 2000);
         }
     } catch (error) {
         // Show error
-        if (modal) {
-            modal.innerHTML = `
-                <div class="modal-error">
+        if (panel) {
+            panel.innerHTML = `
+                <div class="panel-error">
                     <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
                         <circle cx="12" cy="12" r="10"/>
                         <line x1="12" y1="8" x2="12" y2="12"/>
