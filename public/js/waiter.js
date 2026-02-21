@@ -497,6 +497,7 @@ async function resolveServiceRequest(requestId) {
 
         // Remove from local state
         serviceRequests = serviceRequests.filter(r => r.id !== requestId);
+        previousServiceRequestCount = serviceRequests.length;
         renderServiceRequests();
     } catch (error) {
         console.error('Error resolving service request:', error);
