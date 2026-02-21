@@ -118,13 +118,22 @@ router.get('/service-requests', auth, async (req, res) => {
             .limit(50)
             .get();
 
+        // Filter by assigned tables (in-memory to avoid Firestore 'in' operator 10-item limit)
+        const assignedTables = req.user.assignedTables;
         const requests = [];
+
         snapshot.forEach(doc => {
-            requests.push({
-                id: doc.id,
-                ...doc.data(),
-                createdAt: doc.data().createdAt?.toDate?.() || doc.data().createdAt
-            });
+            const data = doc.data();
+            // If assignedTables is null/undefined, user sees all tables
+            // If assignedTables is array, filter by tableNumber
+            if (assignedTables === null || assignedTables === undefined ||
+                assignedTables.includes(data.tableNumber)) {
+                requests.push({
+                    id: doc.id,
+                    ...data,
+                    createdAt: data.createdAt?.toDate?.() || data.createdAt
+                });
+            }
         });
 
         // Sort by createdAt descending on the server side

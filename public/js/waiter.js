@@ -68,13 +68,39 @@ async function loadRestaurantConfig() {
 // Generate table selection options
 function generateTableOptions() {
     const tableCount = restaurantConfig?.serviceMode?.tableCount || 10;
+    const assignedTables = restaurantConfig?.assignedTables; // null/undefined = all tables
     const selectEl = document.getElementById('tableSelect');
 
-    for (let i = 1; i <= tableCount; i++) {
+    // Determine which tables to show
+    let tablesToShow = [];
+    if (!assignedTables || assignedTables === null) {
+        // No restrictions - show all tables (backward compatible)
+        for (let i = 1; i <= tableCount; i++) {
+            tablesToShow.push(i);
+        }
+    } else if (assignedTables.length === 0) {
+        // Empty array = no table access
+        tablesToShow = [];
+    } else {
+        // Show only assigned tables, sorted
+        tablesToShow = [...assignedTables].sort((a, b) => a - b);
+    }
+
+    // Populate dropdown with assigned tables
+    tablesToShow.forEach(tableNum => {
         const option = document.createElement('option');
-        option.value = i;
-        option.textContent = `Table ${i}`;
+        option.value = tableNum;
+        option.textContent = `Table ${tableNum}`;
         selectEl.appendChild(option);
+    });
+
+    // If no tables available, disable select and show message
+    if (tablesToShow.length === 0) {
+        selectEl.disabled = true;
+        const cartTableInfo = document.getElementById('cartTableInfo');
+        if (cartTableInfo) {
+            cartTableInfo.innerHTML = '<p style="color: #DC2626;">No tables assigned. Contact admin.</p>';
+        }
     }
 }
 

@@ -41,6 +41,7 @@ const auth = async (req, res, next) => {
         if (adminDoc.exists) {
             req.user.tenantId = adminDoc.data().tenantId;
             req.user.role = adminDoc.data().role;
+            req.user.assignedTables = adminDoc.data().assignedTables ?? null;  // null = all tables
         }
 
         // STRICT TENANT ISOLATION CHECK
@@ -173,6 +174,7 @@ const requireRole = (allowedRoles) => async (req, res, next) => {
         if (adminDoc.exists) {
             req.user.tenantId = adminDoc.data().tenantId;
             req.user.role = adminDoc.data().role;
+            req.user.assignedTables = adminDoc.data().assignedTables ?? null;  // null = all tables
         }
 
         // Tenant isolation check

@@ -430,6 +430,88 @@ router.patch('/tenants/:id/service-mode', superAdminAuth, async (req, res) => {
 });
 
 /**
+ * Assign tables to a waiter/staff member
+ * PATCH /api/platform/staff/:uid/tables
+ *
+ * Body: { assignedTables: number[] | null }
+ * - null = access to all tables
+ * - [] = no table access
+ * - [1,2,3,4] = specific table access
+ */
+router.patch('/staff/:uid/tables', superAdminAuth, async (req, res) => {
+    const { uid } = req.params;
+    const { assignedTables } = req.body;
+
+    const db = getDb();
+    const Admin = require('../models/Admin');
+
+    try {
+        // Validate user exists
+        const adminDoc = await db.collection('admins').doc(uid).get();
+        if (!adminDoc.exists) {
+            return res.status(404).json({
+                success: false,
+                error: 'User not found'
+            });
+        }
+
+        // Get tenant info to validate table numbers
+        const tenantId = adminDoc.data().tenantId;
+        const tenantDoc = await db.collection('tenants').doc(tenantId).get();
+
+        if (!tenantDoc.exists) {
+            return res.status(404).json({
+                success: false,
+                error: 'Tenant not found'
+            });
+        }
+
+        const maxTables = tenantDoc.data().settings?.serviceMode?.tableCount || 10;
+
+        // Validate table assignment
+        if (!Admin.validateTableAssignment(assignedTables, maxTables)) {
+            return res.status(400).json({
+                success: false,
+                error: `Invalid table assignment. Tables must be numbers between 1 and ${maxTables}`
+            });
+        }
+
+        // Update admin document
+        await db.collection('admins').doc(uid).update({
+            assignedTables,
+            updatedAt: new Date()
+        });
+
+        logger.info('Table assignment updated by super-admin', {
+            requestId: req.requestId,
+            meta: {
+                uid,
+                tenantId,
+                assignedTables,
+                updatedBy: req.user.email
+            }
+        });
+
+        res.json({
+            success: true,
+            message: 'Table assignment updated',
+            assignedTables
+        });
+
+    } catch (error) {
+        logger.error('Failed to update table assignment', {
+            requestId: req.requestId,
+            meta: { uid, error: error.message }
+        });
+
+        res.status(500).json({
+            success: false,
+            error: 'Failed to update table assignment'
+        });
+    }
+});
+
+/**
  * Generate a secure temporary password
  */
 function generateTempPassword() {

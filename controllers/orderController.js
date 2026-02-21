@@ -32,6 +32,17 @@ const createOrder = async (req, res, next) => {
             });
         }
 
+        // Validate waiter table assignment (if authenticated and has restricted tables)
+        if (req.user && req.user.assignedTables && Array.isArray(req.user.assignedTables) && tableNumber) {
+            if (!req.user.assignedTables.includes(tableNumber)) {
+                return res.status(403).json({
+                    success: false,
+                    error: 'Table not assigned',
+                    message: `You are not assigned to Table ${tableNumber}. Your assigned tables: ${req.user.assignedTables.join(', ')}`
+                });
+            }
+        }
+
         // Enrich items with menu data
         const enrichedItems = await Promise.all(items.map(async (item) => {
             const menuItem = await MenuItem.findById(item.menuItemId);

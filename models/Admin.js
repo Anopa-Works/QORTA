@@ -11,7 +11,9 @@ class Admin {
         this.email = data.email;
         this.tenantId = data.tenantId; // The single tenant this admin manages
         this.role = data.role ?? 'owner'; // owner, manager, staff
+        this.assignedTables = data.assignedTables ?? null; // null = all tables, [] = none, [1,2,3] = specific
         this.createdAt = data.createdAt ?? new Date();
+        this.updatedAt = data.updatedAt ?? new Date();
     }
 
     toFirestore() {
@@ -19,13 +21,16 @@ class Admin {
             email: this.email,
             tenantId: this.tenantId,
             role: this.role,
-            createdAt: this.createdAt
+            assignedTables: this.assignedTables,
+            createdAt: this.createdAt,
+            updatedAt: this.updatedAt
         };
     }
 
     static fromFirestore(doc) {
         const data = doc.data();
         if (data.createdAt?.toDate) data.createdAt = data.createdAt.toDate();
+        if (data.updatedAt?.toDate) data.updatedAt = data.updatedAt.toDate();
         return new Admin({ uid: doc.id, ...data });
     }
 
@@ -45,11 +50,20 @@ class Admin {
             email,
             tenantId,
             role,
-            createdAt: new Date()
+            createdAt: new Date(),
+            updatedAt: new Date()
         };
 
         await db.collection('admins').doc(uid).set(adminData, { merge: true });
         return new Admin({ uid, ...adminData });
+    }
+
+    // Validate table assignment
+    static validateTableAssignment(tables, maxTableCount) {
+        if (tables === null || tables === undefined) return true;  // null/undefined = all tables
+        if (!Array.isArray(tables)) return false;
+        if (tables.length === 0) return true;  // empty = no access
+        return tables.every(t => Number.isInteger(t) && t >= 1 && t <= maxTableCount);
     }
 }
 
