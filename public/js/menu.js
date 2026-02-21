@@ -86,99 +86,94 @@ function applyServiceModeRestrictions() {
             mobileNavCart.style.display = 'none';
         }
 
-        // Replace entire menu content with table selection UI
-        showServiceModeUI();
+        // Show big "Call Waiter" button instead of cart
+        showCallWaiterButton();
     }
 }
 
-// Global variable to track selected table
-let selectedTableNumber = null;
+// Show prominent "Call Waiter" button for service mode
+function showCallWaiterButton() {
+    // Remove if already exists
+    const existing = document.getElementById('serviceCallWaiterBtn');
+    if (existing) existing.remove();
 
-// Show service mode UI (table selection + call waiter)
-function showServiceModeUI() {
-    const mainContent = document.getElementById('mainContent');
-    if (!mainContent) return;
+    // Create fixed bottom button
+    const button = document.createElement('button');
+    button.id = 'serviceCallWaiterBtn';
+    button.className = 'service-call-waiter-float';
+    button.onclick = openTableSelectionModal;
+    button.innerHTML = `
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+        </svg>
+        <span>Call Waiter</span>
+    `;
+    document.body.appendChild(button);
+}
 
+// Open table selection modal
+function openTableSelectionModal() {
     const tableCount = window.restaurantConfig?.serviceMode?.tableCount || 10;
 
-    // Build table selection grid
+    // Build table grid
     let tableButtons = '';
     for (let i = 1; i <= tableCount; i++) {
         tableButtons += `
-            <button class="table-btn" data-table="${i}" onclick="selectTable(${i})">
-                <div class="table-number">Table ${i}</div>
+            <button class="table-select-btn" onclick="selectTableAndCall(${i})">
+                <div class="table-number-large">Table ${i}</div>
             </button>
         `;
     }
 
-    mainContent.innerHTML = `
-        <div class="service-mode-container">
-            <div class="service-mode-header">
-                <h1>Welcome!</h1>
-                <p>Please select your table number to request service</p>
-            </div>
-
-            <div class="table-grid">
+    // Create modal overlay
+    const modal = document.createElement('div');
+    modal.id = 'tableSelectionModal';
+    modal.className = 'table-selection-modal';
+    modal.innerHTML = `
+        <div class="modal-overlay" onclick="closeTableSelectionModal()"></div>
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeTableSelectionModal()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+            <h2>Select Your Table</h2>
+            <p class="modal-subtitle">Please select your table number</p>
+            <div class="table-selection-grid">
                 ${tableButtons}
-            </div>
-
-            <div class="selected-table-info" id="selectedTableInfo" style="display: none;">
-                <p>Selected: <strong id="selectedTableDisplay">Table 1</strong></p>
-                <button class="call-waiter-btn" id="callWaiterBtn" onclick="callWaiter()">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-                    </svg>
-                    Call Waiter
-                </button>
-            </div>
-
-            <div class="service-mode-footer">
-                <p>A member of our staff will assist you shortly</p>
             </div>
         </div>
     `;
+
+    document.body.appendChild(modal);
+    // Trigger animation
+    setTimeout(() => modal.classList.add('active'), 10);
 }
 
-// Handle table selection
-function selectTable(tableNumber) {
+// Close table selection modal
+function closeTableSelectionModal() {
+    const modal = document.getElementById('tableSelectionModal');
+    if (modal) {
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
+    }
+}
+
+// Select table and send request
+async function selectTableAndCall(tableNumber) {
     selectedTableNumber = tableNumber;
 
-    // Update visual selection
-    document.querySelectorAll('.table-btn').forEach(btn => {
-        btn.classList.remove('selected');
-    });
-    const selectedBtn = document.querySelector(`[data-table="${tableNumber}"]`);
-    if (selectedBtn) {
-        selectedBtn.classList.add('selected');
+    // Update UI to show loading
+    const modal = document.querySelector('.modal-content');
+    if (modal) {
+        modal.innerHTML = `
+            <div class="modal-loading">
+                <div class="spinner-large"></div>
+                <h3>Calling waiter for Table ${tableNumber}...</h3>
+            </div>
+        `;
     }
-
-    // Show call waiter section
-    const selectedInfo = document.getElementById('selectedTableInfo');
-    const selectedDisplay = document.getElementById('selectedTableDisplay');
-    if (selectedInfo && selectedDisplay) {
-        selectedDisplay.textContent = `Table ${tableNumber}`;
-        selectedInfo.style.display = 'block';
-    }
-}
-
-// Call waiter function
-async function callWaiter() {
-    if (!selectedTableNumber) {
-        showNotification('Please select your table first');
-        return;
-    }
-
-    const btn = document.getElementById('callWaiterBtn');
-    if (!btn) return;
-
-    // Disable button during request
-    btn.disabled = true;
-    btn.innerHTML = `
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spinner">
-            <circle cx="12" cy="12" r="10"/>
-        </svg>
-        Calling...
-    `;
 
     try {
         const response = await api.request('/orders/service-requests', {
@@ -187,45 +182,53 @@ async function callWaiter() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                tableNumber: selectedTableNumber,
-                message: `Service request - Table ${selectedTableNumber}`
+                tableNumber: tableNumber,
+                message: `Service request - Table ${tableNumber}`
             })
         });
 
         if (response.success) {
-            // Show success message
-            btn.innerHTML = `
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                    <polyline points="22 4 12 14.01 9 11.01"/>
-                </svg>
-                Waiter Notified!
-            `;
-            btn.style.background = '#10b981';
-
-            // Reset after 3 seconds
-            setTimeout(() => {
-                btn.disabled = false;
-                btn.innerHTML = `
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-                    </svg>
-                    Call Waiter
+            // Show success
+            if (modal) {
+                modal.innerHTML = `
+                    <div class="modal-success">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                            <polyline points="22 4 12 14.01 9 11.01"/>
+                        </svg>
+                        <h3>Waiter Notified!</h3>
+                        <p>A member of our staff will be with you shortly at Table ${tableNumber}</p>
+                        <button class="btn-primary" onclick="closeTableSelectionModal()">Close</button>
+                    </div>
                 `;
-                btn.style.background = '';
+            }
+
+            // Auto-close after 3 seconds
+            setTimeout(() => {
+                closeTableSelectionModal();
             }, 3000);
         }
     } catch (error) {
-        showNotification('Failed to call waiter. Please try again.');
-        btn.disabled = false;
-        btn.innerHTML = `
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-            </svg>
-            Call Waiter
-        `;
+        // Show error
+        if (modal) {
+            modal.innerHTML = `
+                <div class="modal-error">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    <h3>Failed to Call Waiter</h3>
+                    <p>Please try again or speak to a staff member</p>
+                    <button class="btn-primary" onclick="closeTableSelectionModal()">Close</button>
+                </div>
+            `;
+        }
     }
 }
+
+// Global variable to track selected table
+let selectedTableNumber = null;
 
 // Hide loader with fade transition
 function hideLoader() {
