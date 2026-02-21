@@ -405,8 +405,19 @@ async function loadServiceRequests() {
         const result = await response.json();
         const newServiceRequests = result.data || [];
 
+        console.log('📞 Service Requests Polling:', {
+            received: newServiceRequests.length,
+            previous: previousServiceRequestCount,
+            requests: newServiceRequests.map(r => ({
+                table: r.tableNumber,
+                message: r.message,
+                status: r.status
+            }))
+        });
+
         // Detect new service requests and play chime + vibrate
         if (newServiceRequests.length > previousServiceRequestCount && previousServiceRequestCount > 0) {
+            console.log('🎵 Playing service request chime + vibration - NEW request!');
             playServiceRequestChime();
             vibrateThreeTimes();
         }
@@ -534,8 +545,19 @@ async function loadReadyOrders() {
         const result = await response.json();
         const newReadyOrders = result.data || [];
 
+        console.log('🔔 Ready Orders Polling:', {
+            received: newReadyOrders.length,
+            previous: previousReadyOrderCount,
+            orders: newReadyOrders.map(o => ({
+                orderNumber: o.orderNumber,
+                table: o.tableNumber,
+                status: o.status
+            }))
+        });
+
         // Detect new ready orders and play kitchen chime
         if (newReadyOrders.length > previousReadyOrderCount && previousReadyOrderCount > 0) {
+            console.log('🎵 Playing kitchen ready chime - NEW order detected!');
             playKitchenReadyChime();
         }
 
