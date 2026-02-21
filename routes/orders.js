@@ -203,6 +203,100 @@ router.patch('/service-requests/:id/resolve', auth, async (req, res) => {
     }
 });
 
+// Get orders ready for pickup - PROTECTED (waiters only)
+router.get('/ready-for-pickup', auth, async (req, res) => {
+    try {
+        const { getDb } = require('../config/firebase');
+        const db = getDb();
+
+        // Fetch orders with status READY for this tenant
+        const snapshot = await db.collection('orders')
+            .where('tenantId', '==', req.tenant.id)
+            .where('status', '==', 'READY')
+            .orderBy('createdAt', 'desc')
+            .limit(50)
+            .get();
+
+        // Filter by assigned tables (in-memory)
+        const assignedTables = req.user.assignedTables;
+        const readyOrders = [];
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const tableNumber = data.tableNumber;
+
+            // If assignedTables is null/undefined, user sees all tables
+            // If assignedTables is array, filter by tableNumber
+            if (!tableNumber || assignedTables === null || assignedTables === undefined ||
+                assignedTables.includes(tableNumber)) {
+                readyOrders.push({
+                    id: doc.id,
+                    ...data,
+                    createdAt: data.createdAt?.toDate?.() || data.createdAt
+                });
+            }
+        });
+
+        res.json({
+            success: true,
+            data: readyOrders
+        });
+
+    } catch (error) {
+        const { logger } = require('../utils/logger');
+        logger.error('Failed to fetch ready orders', {
+            requestId: req.requestId,
+            tenantId: req.tenant?.id,
+            meta: { error: error.message }
+        });
+
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch ready orders'
+        });
+    }
+});
+
+// Mark order as picked up by waiter - PROTECTED
+router.patch('/:id/pickup', auth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { getDb } = require('../config/firebase');
+        const db = getDb();
+
+        // Update order status to COMPLETE
+        await db.collection('orders').doc(id).update({
+            status: 'COMPLETE',
+            pickedUpAt: new Date()
+        });
+
+        const { logger } = require('../utils/logger');
+        logger.info('Order picked up by waiter', {
+            requestId: req.requestId,
+            tenantId: req.tenant.id,
+            meta: { orderId: id }
+        });
+
+        res.json({
+            success: true,
+            message: 'Order marked as picked up'
+        });
+
+    } catch (error) {
+        const { logger } = require('../utils/logger');
+        logger.error('Failed to mark order as picked up', {
+            requestId: req.requestId,
+            tenantId: req.tenant?.id,
+            meta: { error: error.message }
+        });
+
+        res.status(500).json({
+            success: false,
+            error: 'Failed to mark order as picked up'
+        });
+    }
+});
+
 // ================== DYNAMIC ROUTES (LAST) ==================
 
 // Get single order (for customer tracking page) - MUST BE LAST

@@ -9,10 +9,94 @@ let authToken = null;
 let restaurantConfig = null;
 let serviceRequests = [];
 let serviceRequestPollInterval = null;
+let ordersReady = [];
+let ordersReadyPollInterval = null;
+let audioCtx = null;
+let previousServiceRequestCount = 0;
+let previousReadyOrderCount = 0;
+
+// Initialize Audio Context
+function initAudio() {
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+    } catch (e) {
+        // Audio not supported
+    }
+}
+
+// Play service request chime (880Hz - high-pitched single ding)
+function playServiceRequestChime() {
+    if (!audioCtx) initAudio();
+    if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+    if (!audioCtx) return;
+
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, now); // A5 note
+    gain.gain.setValueAtTime(0.4, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 0.6);
+}
+
+// Play kitchen ready chime (1046Hz - high C, two dings)
+function playKitchenReadyChime() {
+    if (!audioCtx) initAudio();
+    if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+    if (!audioCtx) return;
+
+    const now = audioCtx.currentTime;
+
+    // First ding (high C)
+    const osc1 = audioCtx.createOscillator();
+    const gain1 = audioCtx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(1046, now); // C6 note
+    gain1.gain.setValueAtTime(0.35, now);
+    gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+    osc1.connect(gain1);
+    gain1.connect(audioCtx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.5);
+
+    // Second ding (slightly delayed)
+    const osc2 = audioCtx.createOscillator();
+    const gain2 = audioCtx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(1046, now + 0.15);
+    gain2.gain.setValueAtTime(0.35, now + 0.15);
+    gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.65);
+    osc2.connect(gain2);
+    gain2.connect(audioCtx.destination);
+    osc2.start(now + 0.15);
+    osc2.stop(now + 0.65);
+}
+
+// Vibrate 3 times (gbm gbm gbm pattern)
+function vibrateThreeTimes() {
+    if ('vibrate' in navigator) {
+        // Pattern: vibrate 200ms, pause 100ms, vibrate 200ms, pause 100ms, vibrate 200ms
+        navigator.vibrate([200, 100, 200, 100, 200]);
+    }
+}
 
 // Initialize dashboard
 async function init() {
     try {
+        // Initialize audio on first user interaction
+        document.addEventListener('click', initAudio, { once: true });
+
         // Wait for Firebase auth
         await new Promise((resolve) => {
             firebase.auth().onAuthStateChanged(resolve);
@@ -41,7 +125,13 @@ async function init() {
 
         // Start service request polling
         await loadServiceRequests();
+        previousServiceRequestCount = serviceRequests.length;
         startServiceRequestPolling();
+
+        // Start ready orders polling
+        await loadReadyOrders();
+        previousReadyOrderCount = ordersReady.length;
+        startReadyOrdersPolling();
 
         // Hide loading overlay
         document.getElementById('authLoading').style.display = 'none';
@@ -313,7 +403,17 @@ async function loadServiceRequests() {
         }
 
         const result = await response.json();
-        serviceRequests = result.data || [];
+        const newServiceRequests = result.data || [];
+
+        // Detect new service requests and play chime + vibrate
+        if (newServiceRequests.length > previousServiceRequestCount && previousServiceRequestCount > 0) {
+            playServiceRequestChime();
+            vibrateThreeTimes();
+        }
+
+        serviceRequests = newServiceRequests;
+        previousServiceRequestCount = serviceRequests.length;
+
         console.log('Service requests loaded:', serviceRequests.length);
         renderServiceRequests();
     } catch (error) {
@@ -414,6 +514,136 @@ function toggleServiceRequests() {
     }
 }
 
+// Load ready orders
+async function loadReadyOrders() {
+    try {
+        const response = await fetch(api.baseUrl + `/api/${api.tenantSlug}/orders/ready-for-pickup`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+            console.error('Ready orders fetch failed:', response.status, errorData);
+            return;
+        }
+
+        const result = await response.json();
+        const newReadyOrders = result.data || [];
+
+        // Detect new ready orders and play kitchen chime
+        if (newReadyOrders.length > previousReadyOrderCount && previousReadyOrderCount > 0) {
+            playKitchenReadyChime();
+        }
+
+        ordersReady = newReadyOrders;
+        previousReadyOrderCount = ordersReady.length;
+
+        console.log('Ready orders loaded:', ordersReady.length);
+        renderReadyOrders();
+    } catch (error) {
+        console.error('Error loading ready orders:', error);
+    }
+}
+
+// Start polling for ready orders
+function startReadyOrdersPolling() {
+    // Poll every 5 seconds
+    ordersReadyPollInterval = setInterval(loadReadyOrders, 5000);
+}
+
+// Stop ready orders polling
+function stopReadyOrdersPolling() {
+    if (ordersReadyPollInterval) {
+        clearInterval(ordersReadyPollInterval);
+        ordersReadyPollInterval = null;
+    }
+}
+
+// Render ready orders panel
+function renderReadyOrders() {
+    const panel = document.getElementById('ordersReadyPanel');
+    const list = document.getElementById('ordersReadyList');
+    const countEl = document.getElementById('readyOrdersCount');
+
+    console.log('Rendering ready orders:', ordersReady.length);
+
+    if (!panel || !list || !countEl) {
+        console.error('Ready orders panel elements not found');
+        return;
+    }
+
+    if (ordersReady.length === 0) {
+        panel.style.display = 'none';
+        return;
+    }
+
+    // Show panel
+    panel.style.display = 'block';
+    countEl.textContent = ordersReady.length;
+
+    // Render ready orders
+    list.innerHTML = ordersReady.map(order => {
+        const createdAt = new Date(order.createdAt);
+        const timeAgo = getTimeAgo(createdAt);
+        const tableInfo = order.tableNumber ? `Table ${order.tableNumber}` : 'Takeout';
+
+        return `
+            <div class="ready-order-card">
+                <div class="order-info">
+                    <div class="order-number">Order #${order.orderNumber}</div>
+                    <div class="order-table">${tableInfo}</div>
+                    <div class="order-time">${timeAgo}</div>
+                </div>
+                <button class="btn-primary btn-pickup" onclick="pickupOrder('${order.id}')">
+                    Pick Up
+                </button>
+            </div>
+        `;
+    }).join('');
+}
+
+// Pick up order (mark as complete)
+async function pickupOrder(orderId) {
+    try {
+        console.log('Picking up order:', orderId);
+        const response = await fetch(api.baseUrl + `/api/${api.tenantSlug}/orders/${orderId}/pickup`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+            console.error('Failed to pick up order:', errorData);
+            throw new Error('Failed to pick up order');
+        }
+
+        console.log('Order picked up successfully');
+
+        // Remove from local state
+        ordersReady = ordersReady.filter(o => o.id !== orderId);
+        previousReadyOrderCount = ordersReady.length;
+        renderReadyOrders();
+    } catch (error) {
+        console.error('Error picking up order:', error);
+        alert('Failed to pick up order: ' + error.message);
+    }
+}
+
+// Toggle ready orders panel
+function toggleReadyOrders() {
+    const panel = document.getElementById('ordersReadyPanel');
+    if (panel.style.display === 'none') {
+        panel.style.display = 'block';
+    } else {
+        panel.style.display = 'none';
+    }
+}
+
 // Get time ago string
 function getTimeAgo(date) {
     const seconds = Math.floor((new Date() - date) / 1000);
@@ -436,6 +666,7 @@ async function handleLogout() {
 
     try {
         stopServiceRequestPolling();
+        stopReadyOrdersPolling();
         await firebase.auth().signOut();
         window.location.href = window.location.pathname.replace('/waiter', '/waiter-login');
     } catch (error) {
