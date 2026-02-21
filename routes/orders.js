@@ -210,10 +210,10 @@ router.get('/ready-for-pickup', auth, async (req, res) => {
         const db = getDb();
 
         // Fetch orders with status READY for this tenant
+        // Note: No orderBy to avoid needing composite index
         const snapshot = await db.collection('orders')
             .where('tenantId', '==', req.tenant.id)
             .where('status', '==', 'READY')
-            .orderBy('createdAt', 'desc')
             .limit(50)
             .get();
 
@@ -235,6 +235,13 @@ router.get('/ready-for-pickup', auth, async (req, res) => {
                     createdAt: data.createdAt?.toDate?.() || data.createdAt
                 });
             }
+        });
+
+        // Sort by createdAt descending in-memory
+        readyOrders.sort((a, b) => {
+            const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
+            const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
+            return dateB - dateA;
         });
 
         res.json({
