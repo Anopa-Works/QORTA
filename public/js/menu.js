@@ -181,7 +181,7 @@ async function callWaiter() {
     `;
 
     try {
-        const response = await api.request('/service-requests', {
+        const response = await api.request('/orders/service-requests', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
