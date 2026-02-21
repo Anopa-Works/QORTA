@@ -7,6 +7,8 @@ let cart = [];
 let selectedTable = null;
 let authToken = null;
 let restaurantConfig = null;
+let serviceRequests = [];
+let serviceRequestPollInterval = null;
 
 // Initialize dashboard
 async function init() {
@@ -36,6 +38,10 @@ async function init() {
 
         // Generate table options
         generateTableOptions();
+
+        // Start service request polling
+        await loadServiceRequests();
+        startServiceRequestPolling();
 
         // Hide loading overlay
         document.getElementById('authLoading').style.display = 'none';
@@ -264,11 +270,146 @@ async function submitOrder() {
     }
 }
 
+// Load service requests
+async function loadServiceRequests() {
+    try {
+        const response = await fetch(api.baseUrl + `/api/${api.tenantSlug}/orders/service-requests`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+            console.error('Service requests fetch failed:', response.status, errorData);
+            return;
+        }
+
+        const result = await response.json();
+        serviceRequests = result.data || [];
+        console.log('Service requests loaded:', serviceRequests.length);
+        renderServiceRequests();
+    } catch (error) {
+        console.error('Error loading service requests:', error);
+    }
+}
+
+// Start polling for service requests
+function startServiceRequestPolling() {
+    // Poll every 5 seconds
+    serviceRequestPollInterval = setInterval(loadServiceRequests, 5000);
+}
+
+// Stop polling
+function stopServiceRequestPolling() {
+    if (serviceRequestPollInterval) {
+        clearInterval(serviceRequestPollInterval);
+        serviceRequestPollInterval = null;
+    }
+}
+
+// Render service requests
+function renderServiceRequests() {
+    const panel = document.getElementById('serviceRequestsPanel');
+    const list = document.getElementById('serviceRequestsList');
+    const countEl = document.getElementById('requestCount');
+
+    console.log('Rendering service requests:', serviceRequests.length);
+
+    if (!panel || !list || !countEl) {
+        console.error('Service request panel elements not found');
+        return;
+    }
+
+    if (serviceRequests.length === 0) {
+        panel.style.display = 'none';
+        return;
+    }
+
+    // Show panel
+    panel.style.display = 'block';
+    countEl.textContent = serviceRequests.length;
+
+    // Render requests
+    list.innerHTML = serviceRequests.map(request => {
+        const createdAt = new Date(request.createdAt);
+        const timeAgo = getTimeAgo(createdAt);
+
+        return `
+            <div class="service-request-card">
+                <div class="request-info">
+                    <div class="request-table">Table ${request.tableNumber}</div>
+                    <div class="request-time">${timeAgo}</div>
+                </div>
+                <button class="btn-primary btn-resolve" onclick="resolveServiceRequest('${request.id}')">
+                    Resolve
+                </button>
+            </div>
+        `;
+    }).join('');
+}
+
+// Resolve service request
+async function resolveServiceRequest(requestId) {
+    try {
+        console.log('Resolving service request:', requestId);
+        const response = await fetch(api.baseUrl + `/api/${api.tenantSlug}/orders/service-requests/${requestId}/resolve`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+            console.error('Failed to resolve service request:', errorData);
+            throw new Error('Failed to resolve service request');
+        }
+
+        console.log('Service request resolved successfully');
+
+        // Remove from local state
+        serviceRequests = serviceRequests.filter(r => r.id !== requestId);
+        renderServiceRequests();
+    } catch (error) {
+        console.error('Error resolving service request:', error);
+        alert('Failed to resolve service request: ' + error.message);
+    }
+}
+
+// Toggle service requests panel
+function toggleServiceRequests() {
+    const panel = document.getElementById('serviceRequestsPanel');
+    if (panel.style.display === 'none') {
+        panel.style.display = 'block';
+    } else {
+        panel.style.display = 'none';
+    }
+}
+
+// Get time ago string
+function getTimeAgo(date) {
+    const seconds = Math.floor((new Date() - date) / 1000);
+
+    if (seconds < 60) return 'Just now';
+
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+}
+
 // Handle logout
 async function handleLogout() {
     if (!confirm('Logout from waiter dashboard?')) return;
 
     try {
+        stopServiceRequestPolling();
         await firebase.auth().signOut();
         window.location.href = window.location.pathname.replace('/waiter', '/waiter-login');
     } catch (error) {

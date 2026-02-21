@@ -104,6 +104,96 @@ router.post('/service-requests', async (req, res) => {
     }
 });
 
+// Get pending service requests - PROTECTED (waiters only)
+router.get('/service-requests', auth, async (req, res) => {
+    try {
+        const { getDb } = require('../config/firebase');
+        const db = getDb();
+
+        // Fetch pending service requests for this tenant
+        // Note: No orderBy to avoid needing composite index
+        const snapshot = await db.collection('serviceRequests')
+            .where('tenantId', '==', req.tenant.id)
+            .where('status', '==', 'PENDING')
+            .limit(50)
+            .get();
+
+        const requests = [];
+        snapshot.forEach(doc => {
+            requests.push({
+                id: doc.id,
+                ...doc.data(),
+                createdAt: doc.data().createdAt?.toDate?.() || doc.data().createdAt
+            });
+        });
+
+        // Sort by createdAt descending on the server side
+        requests.sort((a, b) => {
+            const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
+            const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
+            return dateB - dateA;
+        });
+
+        res.json({
+            success: true,
+            data: requests
+        });
+
+    } catch (error) {
+        const { logger } = require('../utils/logger');
+        logger.error('Failed to fetch service requests', {
+            requestId: req.requestId,
+            tenantId: req.tenant?.id,
+            meta: { error: error.message }
+        });
+
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch service requests'
+        });
+    }
+});
+
+// Resolve service request - PROTECTED (waiters only)
+router.patch('/service-requests/:id/resolve', auth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { getDb } = require('../config/firebase');
+        const db = getDb();
+
+        // Update service request status
+        await db.collection('serviceRequests').doc(id).update({
+            status: 'RESOLVED',
+            resolvedAt: new Date()
+        });
+
+        const { logger } = require('../utils/logger');
+        logger.info('Service request resolved', {
+            requestId: req.requestId,
+            tenantId: req.tenant.id,
+            meta: { serviceRequestId: id }
+        });
+
+        res.json({
+            success: true,
+            message: 'Service request resolved'
+        });
+
+    } catch (error) {
+        const { logger } = require('../utils/logger');
+        logger.error('Failed to resolve service request', {
+            requestId: req.requestId,
+            tenantId: req.tenant?.id,
+            meta: { error: error.message }
+        });
+
+        res.status(500).json({
+            success: false,
+            error: 'Failed to resolve service request'
+        });
+    }
+});
+
 // ================== DYNAMIC ROUTES (LAST) ==================
 
 // Get single order (for customer tracking page) - MUST BE LAST

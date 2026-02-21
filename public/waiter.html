@@ -6,9 +6,9 @@
     <title>QORTA Waiter Dashboard</title>
     <meta name="description" content="Service staff dashboard">
     <base href="/">
-    <link rel="stylesheet" href="css/main.css?v=5">
-    <link rel="stylesheet" href="css/menu.css?v=5">
-    <link rel="stylesheet" href="css/waiter.css?v=5">
+    <link rel="stylesheet" href="css/main.css?v=6">
+    <link rel="stylesheet" href="css/menu.css?v=6">
+    <link rel="stylesheet" href="css/waiter.css?v=6">
 </head>
 <body class="waiter-page">
     <!-- Auth Loading Overlay -->
@@ -27,6 +27,25 @@
             <button class="btn-secondary" onclick="handleLogout()">Logout</button>
         </div>
     </header>
+
+    <!-- Service Requests Notification Panel -->
+    <div class="service-requests-panel" id="serviceRequestsPanel" style="display: none;">
+        <div class="service-requests-header">
+            <div class="header-left">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <h3>Service Requests</h3>
+                <span class="request-count" id="requestCount">0</span>
+            </div>
+            <button class="btn-text" onclick="toggleServiceRequests()">Hide</button>
+        </div>
+        <div class="service-requests-list" id="serviceRequestsList">
+            <!-- Service requests will be rendered here -->
+        </div>
+    </div>
 
     <!-- Table Selection Bar -->
     <div class="table-selector-bar">
@@ -102,8 +121,8 @@
 
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="js/firebase-config.js?v=5"></script>
-    <script src="js/api.js?v=5"></script>
-    <script src="js/waiter.js?v=5"></script>
+    <script src="js/firebase-config.js?v=6"></script>
+    <script src="js/api.js?v=6"></script>
+    <script src="js/waiter.js?v=6"></script>
 </body>
 </html>
