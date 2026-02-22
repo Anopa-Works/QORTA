@@ -6,6 +6,17 @@ let kitchenData = { counts: {}, orders: {}, avgPrepTime: 0 };
 let eventSource = null;
 let audioCtx = null;
 
+// XSS prevention - escape all user-supplied data before rendering HTML
+function esc(str) {
+    if (str == null) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 // Initialize Audio Context
 function initAudio() {
   try {
@@ -87,13 +98,8 @@ async function init() {
     await loadKitchenBoard();
     setupSSE();
   } catch (error) {
-    // Error:('Initialization error:', error);
-    if (authLoading) authLoading.style.display = 'none';
-    // Still try to load kitchen even if auth fails (for non-service mode)
-    updateClock();
-    setInterval(updateClock, 1000);
-    await loadKitchenBoard();
-    setupSSE();
+    // Auth failed — redirect to login, never load kitchen unauthenticated
+    window.location.href = `/${api.tenantSlug}/login`;
   }
 }
 
@@ -194,7 +200,7 @@ function createOrderCard(order, status) {
   const badgesHtml = [];
 
   if (order.tableNumber) {
-    badgesHtml.push(`<span class="order-meta-badge dine-in">Table ${order.tableNumber}</span>`);
+    badgesHtml.push(`<span class="order-meta-badge dine-in">Table ${esc(order.tableNumber)}</span>`);
   }
 
   if (order.orderType === 'DINE_IN') {
@@ -212,7 +218,7 @@ function createOrderCard(order, status) {
   if (order.customerName && order.customerName !== 'Guest') {
     customerInfo = `<div class="customer-name">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        ${order.customerName}
+        ${esc(order.customerName)}
     </div>`;
   }
 
@@ -221,28 +227,28 @@ function createOrderCard(order, status) {
   if (order.waiterName) {
     waiterInfo = `<div class="waiter-name">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        Server: ${order.waiterName}
+        Server: ${esc(order.waiterName)}
     </div>`;
   }
 
-  // Build notes/allergies section
+  // Build notes/allergies section - ESCAPE user input to prevent XSS
   let notesSection = '';
   if (order.notes) {
     notesSection = `
       <div class="order-notes">
         <strong>⚠️ Notes:</strong>
-        ${order.notes}
+        ${esc(order.notes)}
       </div>
     `;
   }
 
-  // Build delivery info section
+  // Build delivery info section - ESCAPE user input to prevent XSS
   let deliveryInfo = '';
   if (order.orderType === 'DELIVERY') {
     deliveryInfo = `
       <div class="delivery-info">
-        ${order.deliveryAddress ? `<div class="delivery-address">📍 ${order.deliveryAddress}</div>` : ''}
-        ${order.deliveryPhone ? `<div class="delivery-phone">📞 ${order.deliveryPhone}</div>` : ''}
+        ${order.deliveryAddress ? `<div class="delivery-address">📍 ${esc(order.deliveryAddress)}</div>` : ''}
+        ${order.deliveryPhone ? `<div class="delivery-phone">📞 ${esc(order.deliveryPhone)}</div>` : ''}
       </div>
     `;
   }
@@ -250,36 +256,36 @@ function createOrderCard(order, status) {
   return `
     <div class="kitchen-order-card">
       <div class="order-card-header">
-        <span class="order-number">#${order.orderNumber}</span>
+        <span class="order-number">#${esc(order.orderNumber)}</span>
         <span class="order-time-badge">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <circle cx="12" cy="12" r="10" stroke-width="2"/>
             <path d="M12 6v6l4 2" stroke-width="2"/>
           </svg>
-          ${order.timeAgo || 'Just now'}
+          ${esc(order.timeAgo || 'Just now')}
         </span>
       </div>
-      
+
       ${badgesHtml.length ? `<div class="order-meta">${badgesHtml.join('')}</div>` : ''}
 
       ${customerInfo}
       ${waiterInfo}
       ${deliveryInfo}
-      
+
       <div class="order-items-list">
         ${order.items.map(item => `
           <div class="order-item-row">
-            <span class="item-qty">${item.quantity}</span>
-            <span class="item-name">${item.name}</span>
+            <span class="item-qty">${esc(item.quantity)}</span>
+            <span class="item-name">${esc(item.name)}</span>
           </div>
           ${item.modifiers && item.modifiers.length > 0 ? `
-            <div class="item-modifier">${item.modifiers.join(', ')}</div>
+            <div class="item-modifier">${item.modifiers.map(esc).join(', ')}</div>
           ` : ''}
         `).join('')}
       </div>
 
       ${notesSection}
-      
+
       ${actionButton}
     </div>
   `;

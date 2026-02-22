@@ -30,8 +30,8 @@ router.get('/track/:orderNumber', trackOrder);
 
 // ================== ADMIN ROUTES (PROTECTED) ==================
 
-// Get kitchen board - Open for Service Mode (waiters need to see orders)
-router.get('/kitchen', getKitchenBoard);
+// Get kitchen board - requires auth (kitchen must be logged in)
+router.get('/kitchen', auth, getKitchenBoard);
 
 // Get all orders (with optional filters)
 router.get('/', auth, getOrders);

@@ -61,8 +61,13 @@ const kitchenStream = async (req, res) => {
                 });
                 return res.status(403).json({ success: false, error: 'Access denied' });
             }
+        } else {
+            // No token provided — only allow if service mode is explicitly enabled for this tenant
+            const isServiceModeEnabled = req.tenant.settings?.serviceMode?.enabled === true;
+            if (!isServiceModeEnabled) {
+                return res.status(401).json({ success: false, error: 'Authentication required' });
+            }
         }
-        // If no token, allow unauthenticated access for Service Mode
 
         // Set headers for SSE
         res.setHeader('Content-Type', 'text/event-stream');

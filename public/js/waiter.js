@@ -12,8 +12,9 @@ let serviceRequestPollInterval = null;
 let ordersReady = [];
 let ordersReadyPollInterval = null;
 let audioCtx = null;
-let previousServiceRequestCount = 0;
-let previousReadyOrderCount = 0;
+// Track by IDs (not counts) to avoid race conditions in rapid polling
+let seenServiceRequestIds = new Set();
+let seenReadyOrderIds = new Set();
 
 // Initialize Audio Context
 function initAudio() {
@@ -405,27 +406,16 @@ async function loadServiceRequests() {
         const result = await response.json();
         const newServiceRequests = result.data || [];
 
-        console.log('📞 Service Requests Polling:', {
-            received: newServiceRequests.length,
-            previous: previousServiceRequestCount,
-            requests: newServiceRequests.map(r => ({
-                table: r.tableNumber,
-                message: r.message,
-                status: r.status
-            }))
-        });
-
-        // Detect new service requests and play chime + vibrate
-        if (newServiceRequests.length > previousServiceRequestCount && previousServiceRequestCount > 0) {
-            console.log('🎵 Playing service request chime + vibration - NEW request!');
+        // Detect genuinely NEW requests by ID — avoids race conditions from count comparison
+        const hasNewRequest = newServiceRequests.some(r => r.id && !seenServiceRequestIds.has(r.id));
+        if (hasNewRequest && seenServiceRequestIds.size > 0) {
             playServiceRequestChime();
             vibrateThreeTimes();
         }
 
+        // Update the seen IDs to the current active set
+        seenServiceRequestIds = new Set(newServiceRequests.map(r => r.id).filter(Boolean));
         serviceRequests = newServiceRequests;
-        previousServiceRequestCount = serviceRequests.length;
-
-        console.log('Service requests loaded:', serviceRequests.length);
         renderServiceRequests();
     } catch (error) {
         console.error('Error loading service requests:', error);
@@ -545,26 +535,15 @@ async function loadReadyOrders() {
         const result = await response.json();
         const newReadyOrders = result.data || [];
 
-        console.log('🔔 Ready Orders Polling:', {
-            received: newReadyOrders.length,
-            previous: previousReadyOrderCount,
-            orders: newReadyOrders.map(o => ({
-                orderNumber: o.orderNumber,
-                table: o.tableNumber,
-                status: o.status
-            }))
-        });
-
-        // Detect new ready orders and play kitchen chime
-        if (newReadyOrders.length > previousReadyOrderCount && previousReadyOrderCount > 0) {
-            console.log('🎵 Playing kitchen ready chime - NEW order detected!');
+        // Detect genuinely NEW ready orders by ID — avoids race conditions
+        const hasNewOrder = newReadyOrders.some(o => o.id && !seenReadyOrderIds.has(o.id));
+        if (hasNewOrder && seenReadyOrderIds.size > 0) {
             playKitchenReadyChime();
         }
 
+        // Update the seen IDs to the current active set
+        seenReadyOrderIds = new Set(newReadyOrders.map(o => o.id).filter(Boolean));
         ordersReady = newReadyOrders;
-        previousReadyOrderCount = ordersReady.length;
-
-        console.log('Ready orders loaded:', ordersReady.length);
         renderReadyOrders();
     } catch (error) {
         console.error('Error loading ready orders:', error);
