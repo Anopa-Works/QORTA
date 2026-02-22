@@ -323,8 +323,12 @@ async function updateStatus(orderId, newStatus) {
   try {
     await api.updateOrderStatus(orderId, newStatus);
   } catch (error) {
-    // Error:('Failed to update status:', error);
-    // Error is logged, kitchen board will reload automatically
+    const msg = error.message || 'Failed to update order status';
+    showError(msg.includes('401') || msg.includes('403')
+      ? 'Session expired. Please log in again.'
+      : 'Could not update order. Please try again.');
+    // Reload board to reflect actual state
+    await loadKitchenBoard();
   }
 }
 

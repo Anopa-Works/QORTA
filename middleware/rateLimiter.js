@@ -36,7 +36,7 @@ const createRateLimiter = (options = {}) => {
         message = 'Too many requests. Please try again later.',
         keyGenerator = (req) => {
             // Use IP + tenant for rate limiting
-            const ip = req.ip || req.connection.remoteAddress || 'unknown';
+            const ip = req.ip || req.socket?.remoteAddress || 'unknown';
             const tenant = req.params.slug || 'global';
             return `${ip}:${tenant}`;
         },
@@ -108,7 +108,7 @@ const authLimiter = createRateLimiter({
     max: 10,
     message: 'Too many authentication attempts. Please wait before trying again.',
     keyGenerator: (req) => {
-        const ip = req.ip || req.connection.remoteAddress || 'unknown';
+        const ip = req.ip || req.socket?.remoteAddress || 'unknown';
         const tenant = req.params.slug || 'global';
         return `auth:${tenant}:${ip}`;
     }
@@ -121,7 +121,7 @@ const orderLimiter = createRateLimiter({
     max: 20,
     message: 'Too many orders. Please wait before placing another order.',
     keyGenerator: (req) => {
-        const ip = req.ip || req.connection.remoteAddress || 'unknown';
+        const ip = req.ip || req.socket?.remoteAddress || 'unknown';
         const tenant = req.params.slug || 'global';
         return `order:${tenant}:${ip}`;
     }

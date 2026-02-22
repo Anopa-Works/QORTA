@@ -282,11 +282,14 @@ const registerKitchenClient = (tenantId, res) => {
     kitchenClients.get(tenantId).add(res);
 };
 
-// Unregister SSE client for kitchen
+// Unregister SSE client for kitchen — remove empty Set to prevent memory leak
 const unregisterKitchenClient = (tenantId, res) => {
     const clients = kitchenClients.get(tenantId);
     if (clients) {
         clients.delete(res);
+        if (clients.size === 0) {
+            kitchenClients.delete(tenantId);
+        }
     }
 };
 
@@ -298,11 +301,14 @@ const registerOrderClient = (orderId, res) => {
     orderClients.get(orderId).add(res);
 };
 
-// Unregister SSE client for order tracking
+// Unregister SSE client for order tracking — remove empty Set to prevent memory leak
 const unregisterOrderClient = (orderId, res) => {
     const clients = orderClients.get(orderId);
     if (clients) {
         clients.delete(res);
+        if (clients.size === 0) {
+            orderClients.delete(orderId);
+        }
     }
 };
 

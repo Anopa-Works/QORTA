@@ -397,11 +397,7 @@ async function loadServiceRequests() {
             }
         });
 
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-            console.error('Service requests fetch failed:', response.status, errorData);
-            return;
-        }
+        if (!response.ok) return;
 
         const result = await response.json();
         const newServiceRequests = result.data || [];
@@ -418,7 +414,7 @@ async function loadServiceRequests() {
         serviceRequests = newServiceRequests;
         renderServiceRequests();
     } catch (error) {
-        console.error('Error loading service requests:', error);
+        // Network error — will retry on next poll
     }
 }
 
@@ -442,12 +438,7 @@ function renderServiceRequests() {
     const list = document.getElementById('serviceRequestsList');
     const countEl = document.getElementById('requestCount');
 
-    console.log('Rendering service requests:', serviceRequests.length);
-
-    if (!panel || !list || !countEl) {
-        console.error('Service request panel elements not found');
-        return;
-    }
+    if (!panel || !list || !countEl) return;
 
     if (serviceRequests.length === 0) {
         panel.style.display = 'none';
@@ -480,7 +471,6 @@ function renderServiceRequests() {
 // Resolve service request
 async function resolveServiceRequest(requestId) {
     try {
-        console.log('Resolving service request:', requestId);
         const response = await fetch(api.baseUrl + `/api/${api.tenantSlug}/orders/service-requests/${requestId}/resolve`, {
             method: 'PATCH',
             headers: {
@@ -488,21 +478,14 @@ async function resolveServiceRequest(requestId) {
             }
         });
 
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-            console.error('Failed to resolve service request:', errorData);
-            throw new Error('Failed to resolve service request');
-        }
+        if (!response.ok) throw new Error('Failed to resolve service request');
 
-        console.log('Service request resolved successfully');
-
-        // Remove from local state
+        // Remove from local state and update seen IDs
         serviceRequests = serviceRequests.filter(r => r.id !== requestId);
-        previousServiceRequestCount = serviceRequests.length;
+        seenServiceRequestIds.delete(requestId);
         renderServiceRequests();
     } catch (error) {
-        console.error('Error resolving service request:', error);
-        alert('Failed to resolve service request: ' + error.message);
+        alert('Failed to resolve service request. Please try again.');
     }
 }
 
@@ -526,11 +509,7 @@ async function loadReadyOrders() {
             }
         });
 
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-            console.error('Ready orders fetch failed:', response.status, errorData);
-            return;
-        }
+        if (!response.ok) return;
 
         const result = await response.json();
         const newReadyOrders = result.data || [];
@@ -546,7 +525,7 @@ async function loadReadyOrders() {
         ordersReady = newReadyOrders;
         renderReadyOrders();
     } catch (error) {
-        console.error('Error loading ready orders:', error);
+        // Network error — will retry on next poll
     }
 }
 
@@ -570,12 +549,7 @@ function renderReadyOrders() {
     const list = document.getElementById('ordersReadyList');
     const countEl = document.getElementById('readyOrdersCount');
 
-    console.log('Rendering ready orders:', ordersReady.length);
-
-    if (!panel || !list || !countEl) {
-        console.error('Ready orders panel elements not found');
-        return;
-    }
+    if (!panel || !list || !countEl) return;
 
     if (ordersReady.length === 0) {
         panel.style.display = 'none';
@@ -610,7 +584,6 @@ function renderReadyOrders() {
 // Pick up order (mark as complete)
 async function pickupOrder(orderId) {
     try {
-        console.log('Picking up order:', orderId);
         const response = await fetch(api.baseUrl + `/api/${api.tenantSlug}/orders/${orderId}/pickup`, {
             method: 'PATCH',
             headers: {
@@ -618,21 +591,14 @@ async function pickupOrder(orderId) {
             }
         });
 
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-            console.error('Failed to pick up order:', errorData);
-            throw new Error('Failed to pick up order');
-        }
+        if (!response.ok) throw new Error('Failed to pick up order');
 
-        console.log('Order picked up successfully');
-
-        // Remove from local state
+        // Remove from local state and update seen IDs
         ordersReady = ordersReady.filter(o => o.id !== orderId);
-        previousReadyOrderCount = ordersReady.length;
+        seenReadyOrderIds.delete(orderId);
         renderReadyOrders();
     } catch (error) {
-        console.error('Error picking up order:', error);
-        alert('Failed to pick up order: ' + error.message);
+        alert('Failed to pick up order. Please try again.');
     }
 }
 

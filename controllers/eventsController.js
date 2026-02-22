@@ -108,7 +108,8 @@ const kitchenStream = async (req, res) => {
             unregisterKitchenClient(req.tenant.id, res);
         });
     } catch (error) {
-        console.error('Kitchen SSE error:', error);
+        const { logger } = require('../utils/logger');
+        logger.error('Kitchen SSE error', { meta: { message: error.message, code: error.code } });
         if (!res.headersSent) {
             return res.status(error.code === 'auth/argument-error' ? 401 : 500).json({
                 success: false,
@@ -160,7 +161,8 @@ const orderTrackingStream = async (req, res) => {
             unregisterOrderClient(id, res);
         });
     } catch (error) {
-        console.error('Order tracking SSE error:', error);
+        const { logger } = require('../utils/logger');
+        logger.error('Order tracking SSE error', { meta: { message: error.message } });
         if (!res.headersSent) {
             return res.status(500).json({ success: false, error: 'Stream error' });
         }
