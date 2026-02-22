@@ -130,6 +130,16 @@ const optionalAuth = async (req, res, next) => {
                 email: decodedToken.email,
                 emailVerified: decodedToken.email_verified
             };
+
+            // Load admin document to get tenant and assigned tables
+            const db = admin.firestore();
+            const adminDoc = await db.collection('admins').doc(decodedToken.uid).get();
+
+            if (adminDoc.exists) {
+                req.user.tenantId = adminDoc.data().tenantId;
+                req.user.role = adminDoc.data().role;
+                req.user.assignedTables = adminDoc.data().assignedTables ?? null;
+            }
         }
 
         next();

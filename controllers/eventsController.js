@@ -16,8 +16,18 @@ const { formatOrderForKitchen, formatOrderForTracking } = require('../utils/orde
 // SSE stream for kitchen board
 const kitchenStream = async (req, res) => {
     try {
+        const { logger } = require('../utils/logger');
         // Optional auth for Service Mode - kitchen can stream without login
         const { token } = req.query;
+
+        logger.info('🔌 SSE Kitchen connection attempt', {
+            requestId: req.requestId,
+            tenantId: req.tenant?.id,
+            meta: {
+                hasToken: !!token,
+                tenantSlug: req.tenant?.slug
+            }
+        });
 
         if (token) {
             // If token provided, verify it
@@ -25,7 +35,30 @@ const kitchenStream = async (req, res) => {
             const db = admin.firestore();
             const adminDoc = await db.collection('admins').doc(decodedToken.uid).get();
 
+            logger.info('🔐 SSE Token verified', {
+                requestId: req.requestId,
+                tenantId: req.tenant?.id,
+                meta: {
+                    userUid: decodedToken.uid,
+                    userEmail: decodedToken.email,
+                    adminDocExists: adminDoc.exists,
+                    adminTenantId: adminDoc.exists ? adminDoc.data().tenantId : null,
+                    requestTenantId: req.tenant?.id,
+                    match: adminDoc.exists && adminDoc.data().tenantId === req.tenant.id
+                }
+            });
+
             if (!adminDoc.exists || adminDoc.data().tenantId !== req.tenant.id) {
+                logger.warn('❌ SSE Access denied', {
+                    requestId: req.requestId,
+                    tenantId: req.tenant?.id,
+                    meta: {
+                        reason: !adminDoc.exists ? 'Admin doc not found' : 'Tenant ID mismatch',
+                        userUid: decodedToken.uid,
+                        adminTenantId: adminDoc.exists ? adminDoc.data().tenantId : null,
+                        requestTenantId: req.tenant?.id
+                    }
+                });
                 return res.status(403).json({ success: false, error: 'Access denied' });
             }
         }
