@@ -207,6 +207,7 @@ router.patch('/service-requests/:id/resolve', auth, async (req, res) => {
 router.get('/ready-for-pickup', auth, async (req, res) => {
     try {
         const { getDb } = require('../config/firebase');
+        const { logger } = require('../utils/logger');
         const db = getDb();
 
         // Fetch orders with status READY for this tenant
@@ -217,9 +218,20 @@ router.get('/ready-for-pickup', auth, async (req, res) => {
             .limit(50)
             .get();
 
+        logger.info('📦 Ready orders query', {
+            requestId: req.requestId,
+            tenantId: req.tenant.id,
+            meta: {
+                totalFoundInFirestore: snapshot.size,
+                assignedTables: req.user.assignedTables,
+                waiterEmail: req.user.email
+            }
+        });
+
         // Filter by assigned tables (in-memory)
         const assignedTables = req.user.assignedTables;
         const readyOrders = [];
+        const filteredOut = [];
 
         snapshot.forEach(doc => {
             const data = doc.data();
@@ -234,6 +246,28 @@ router.get('/ready-for-pickup', auth, async (req, res) => {
                     ...data,
                     createdAt: data.createdAt?.toDate?.() || data.createdAt
                 });
+            } else {
+                filteredOut.push({
+                    orderId: doc.id,
+                    tableNumber,
+                    orderNumber: data.orderNumber,
+                    status: data.status
+                });
+            }
+        });
+
+        logger.info('✅ Ready orders after filtering', {
+            requestId: req.requestId,
+            tenantId: req.tenant.id,
+            meta: {
+                matchingOrders: readyOrders.length,
+                filteredOutCount: filteredOut.length,
+                filteredOutOrders: filteredOut,
+                returnedOrders: readyOrders.map(o => ({
+                    orderNumber: o.orderNumber,
+                    table: o.tableNumber,
+                    status: o.status
+                }))
             }
         });
 

@@ -195,6 +195,7 @@ const getKitchenBoard = async (req, res, next) => {
 // Update order status (admin)
 const updateOrderStatus = async (req, res, next) => {
     try {
+        const { logger } = require('../utils/logger');
         const { id } = req.params;
         const { status, note } = req.body;
 
@@ -217,6 +218,18 @@ const updateOrderStatus = async (req, res, next) => {
         }
 
         const updatedOrder = await Order.updateStatus(req.tenant.id, id, status, note);
+
+        logger.info('🔄 Order status updated', {
+            requestId: req.requestId,
+            tenantId: req.tenant.id,
+            meta: {
+                orderId: id,
+                orderNumber: updatedOrder.orderNumber,
+                oldStatus: order.status,
+                newStatus: status,
+                tableNumber: updatedOrder.tableNumber
+            }
+        });
 
         // Broadcast to kitchen
         broadcastToKitchen(req.tenant.id, {
