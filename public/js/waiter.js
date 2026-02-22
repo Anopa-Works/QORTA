@@ -12,6 +12,7 @@ let serviceRequestPollInterval = null;
 let ordersReady = [];
 let ordersReadyPollInterval = null;
 let audioCtx = null;
+let waiterEventSource = null;
 // Track by IDs (not counts) to avoid race conditions in rapid polling
 let seenServiceRequestIds = new Set();
 let seenReadyOrderIds = new Set();
@@ -123,6 +124,9 @@ async function init() {
 
         // Generate table options
         generateTableOptions();
+
+        // Connect SSE for real-time ORDER_READY push from kitchen
+        await setupWaiterSSE();
 
         // Start service request polling
         await loadServiceRequests();
@@ -336,6 +340,12 @@ async function submitOrder() {
     submitBtn.textContent = 'Submitting...';
 
     try {
+        // Always get a fresh token — the cached authToken expires after 1 hour
+        // and optionalAuth silently drops req.user on expiry, causing waiterName to be null
+        const currentUser = firebase.auth().currentUser;
+        if (!currentUser) throw new Error('Not authenticated');
+        const freshToken = await currentUser.getIdToken();
+
         const orderData = {
             items: cart.map(i => ({
                 menuItemId: i.menuItemId,
@@ -352,7 +362,7 @@ async function submitOrder() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${freshToken}`
             },
             body: JSON.stringify(orderData)
         });
@@ -628,6 +638,42 @@ function getTimeAgo(date) {
     return `${days}d ago`;
 }
 
+// Setup SSE stream to receive ORDER_READY pushes from kitchen in real-time
+async function setupWaiterSSE() {
+    try {
+        const currentUser = firebase.auth().currentUser;
+        if (!currentUser) return;
+
+        const token = await currentUser.getIdToken();
+
+        waiterEventSource = api.createWaiterStream(
+            token,
+            (data) => handleWaiterSSEMessage(data),
+            () => {
+                // On error, retry after 10 seconds (polling still running as fallback)
+                waiterEventSource = null;
+                setTimeout(setupWaiterSSE, 10000);
+            }
+        );
+    } catch (error) {
+        // SSE unavailable — polling remains the fallback
+    }
+}
+
+// Handle incoming SSE messages from the server
+function handleWaiterSSEMessage(data) {
+    if (data.type === 'ORDER_READY') {
+        const order = data.order;
+        // Only act if this order isn't already shown
+        if (order.id && !seenReadyOrderIds.has(order.id)) {
+            seenReadyOrderIds.add(order.id);
+            ordersReady.push(order);
+            renderReadyOrders();
+            playKitchenReadyChime();
+        }
+    }
+}
+
 // Handle logout
 async function handleLogout() {
     if (!confirm('Logout from waiter dashboard?')) return;
@@ -635,6 +681,10 @@ async function handleLogout() {
     try {
         stopServiceRequestPolling();
         stopReadyOrdersPolling();
+        if (waiterEventSource) {
+            waiterEventSource.close();
+            waiterEventSource = null;
+        }
         await firebase.auth().signOut();
         window.location.href = window.location.pathname.replace('/waiter', '/waiter-login');
     } catch (error) {

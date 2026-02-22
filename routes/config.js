@@ -48,30 +48,50 @@ router.patch('/service-mode', auth, async (req, res) => {
         }
 
         const { getDb } = require('../config/firebase');
-        const db = getDb();
-        const settingsRef = db.collection('tenantSettings').doc(req.tenant.id);
-
-        const doc = await settingsRef.get();
-        const currentTableCount = doc.exists ? doc.data().serviceMode?.tableCount : 10;
-
-        await settingsRef.set({
-            serviceMode: {
-                enabled,
-                tableCount: (tableCount && typeof tableCount === 'number') ? tableCount : (currentTableCount || 10)
-            }
-        }, { merge: true });
-
         const { logger } = require('../utils/logger');
+        const db = getDb();
+
+        const finalTableCount = (tableCount && typeof tableCount === 'number')
+            ? tableCount
+            : (req.tenant.settings.serviceMode?.tableCount || 10);
+
+        // Read the current tenant doc and write back the full settings object.
+        // Using dotted-path update risks leaving a partial settings map when the
+        // field doesn't yet exist (tenant created without settings). Writing the
+        // full object is safe and explicit.
+        const tenantRef = db.collection('tenants').doc(req.tenant.id);
+        const tenantDoc = await tenantRef.get();
+
+        if (!tenantDoc.exists) {
+            return res.status(404).json({ success: false, error: 'Tenant not found' });
+        }
+
+        const current = tenantDoc.data().settings || {};
+        await tenantRef.update({
+            settings: {
+                taxRate:   current.taxRate   ?? 0.08,
+                currency:  current.currency  ?? 'USD',
+                timezone:  current.timezone  ?? 'UTC',
+                serviceMode: { enabled, tableCount: finalTableCount }
+            },
+            updatedAt: new Date()
+        });
+
         logger.info('Service mode toggled', {
             tenantId: req.tenant.id,
-            meta: { enabled, tableCount, updatedBy: req.user.email }
+            meta: { enabled, tableCount: finalTableCount, updatedBy: req.user.email }
         });
 
         res.json({
             success: true,
-            data: { enabled, tableCount: tableCount || currentTableCount || 10 }
+            data: { enabled, tableCount: finalTableCount }
         });
     } catch (error) {
+        const { logger } = require('../utils/logger');
+        logger.error('Failed to toggle service mode', {
+            tenantId: req.tenant?.id,
+            meta: { error: error.message }
+        });
         res.status(500).json({ success: false, error: 'Failed to update service mode' });
     }
 });

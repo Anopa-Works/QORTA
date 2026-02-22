@@ -210,10 +210,8 @@ router.get('/ready-for-pickup', auth, async (req, res) => {
         const { logger } = require('../utils/logger');
         const db = getDb();
 
-        // Fetch orders with status READY for this tenant
-        // Note: No orderBy to avoid needing composite index
-        const snapshot = await db.collection('orders')
-            .where('tenantId', '==', req.tenant.id)
+        // Orders live in the tenant subcollection: tenants/{tenantId}/orders
+        const snapshot = await db.collection('tenants').doc(req.tenant.id).collection('orders')
             .where('status', '==', 'READY')
             .limit(50)
             .get();
@@ -305,8 +303,8 @@ router.patch('/:id/pickup', auth, async (req, res) => {
         const { getDb } = require('../config/firebase');
         const db = getDb();
 
-        // Update order status to COMPLETE
-        await db.collection('orders').doc(id).update({
+        // Orders live in the tenant subcollection: tenants/{tenantId}/orders
+        await db.collection('tenants').doc(req.tenant.id).collection('orders').doc(id).update({
             status: 'COMPLETE',
             pickedUpAt: new Date()
         });

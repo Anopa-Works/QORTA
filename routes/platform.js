@@ -370,41 +370,33 @@ router.patch('/tenants/:id/service-mode', superAdminAuth, async (req, res) => {
     }
 
     const db = getDb();
-    const settingsRef = db.collection('tenantSettings').doc(id);
 
     try {
-        const doc = await settingsRef.get();
+        // Read current tenant to get existing tableCount if not provided
+        const tenantRef = db.collection('tenants').doc(id);
+        const tenantDoc = await tenantRef.get();
 
-        // Build service mode settings
-        const serviceModeData = {
-            enabled,
-            tableCount: tableCount !== undefined ? tableCount : (doc.exists ? doc.data().serviceMode?.tableCount : 10) || 10
-        };
-
-        // If document doesn't exist, create it with default settings
-        if (!doc.exists) {
-            await settingsRef.set({
-                tenantId: id,
-                taxRate: 0.0,
-                serviceMode: serviceModeData,
-                createdAt: new Date(),
-                updatedAt: new Date()
-            });
-        } else {
-            // Update existing document
-            await settingsRef.update({
-                'serviceMode.enabled': enabled,
-                'serviceMode.tableCount': serviceModeData.tableCount,
-                updatedAt: new Date()
-            });
+        if (!tenantDoc.exists) {
+            return res.status(404).json({ success: false, error: 'Tenant not found' });
         }
+
+        const currentTableCount = tenantDoc.data().settings?.serviceMode?.tableCount || 10;
+        const finalTableCount = tableCount !== undefined ? tableCount : currentTableCount;
+
+        // Write to tenants document — this is what tenantResolver reads on every request.
+        // (tenantSettings is a separate collection not read by tenantResolver)
+        await tenantRef.update({
+            'settings.serviceMode.enabled': enabled,
+            'settings.serviceMode.tableCount': finalTableCount,
+            updatedAt: new Date()
+        });
 
         logger.info('Service mode updated by super-admin', {
             requestId: req.requestId,
             tenantId: id,
             meta: {
                 enabled,
-                tableCount: serviceModeData.tableCount,
+                tableCount: finalTableCount,
                 updatedBy: req.user.email
             }
         });
@@ -412,7 +404,7 @@ router.patch('/tenants/:id/service-mode', superAdminAuth, async (req, res) => {
         res.json({
             success: true,
             message: 'Service mode updated',
-            serviceMode: serviceModeData
+            serviceMode: { enabled, tableCount: finalTableCount }
         });
 
     } catch (error) {

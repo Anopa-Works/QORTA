@@ -17,6 +17,7 @@ const {
 // Store SSE clients for real-time updates
 const kitchenClients = new Map();  // tenantId -> Set of response objects
 const orderClients = new Map();    // orderId -> Set of response objects
+const waiterClients = new Map();   // `${tenantId}:${waiterEmail}` -> Set of response objects
 
 // Create new order
 const createOrder = async (req, res, next) => {
@@ -243,6 +244,36 @@ const updateOrderStatus = async (req, res, next) => {
             data: formatOrderForTracking(updatedOrder)
         });
 
+        // Notify the waiter who placed this order when it becomes READY
+        if (status === ORDER_STATUS.READY && updatedOrder.waiterName) {
+            logger.info('📲 Pushing ORDER_READY to waiter SSE', {
+                requestId: req.requestId,
+                tenantId: req.tenant.id,
+                meta: {
+                    orderId: id,
+                    orderNumber: updatedOrder.orderNumber,
+                    waiterEmail: updatedOrder.waiterName
+                }
+            });
+            broadcastToWaiter(req.tenant.id, updatedOrder.waiterName, {
+                type: 'ORDER_READY',
+                order: {
+                    id: updatedOrder.id,
+                    orderNumber: updatedOrder.orderNumber,
+                    tableNumber: updatedOrder.tableNumber,
+                    items: updatedOrder.items,
+                    status: updatedOrder.status,
+                    createdAt: updatedOrder.createdAt
+                }
+            });
+        } else if (status === ORDER_STATUS.READY) {
+            logger.warn('⚠️ Order READY but no waiterName — SSE push skipped', {
+                requestId: req.requestId,
+                tenantId: req.tenant.id,
+                meta: { orderId: id, orderNumber: updatedOrder.orderNumber }
+            });
+        }
+
         res.json({
             success: true,
             data: updatedOrder
@@ -293,6 +324,37 @@ const unregisterKitchenClient = (tenantId, res) => {
     }
 };
 
+// Broadcast to a specific waiter by email
+const broadcastToWaiter = (tenantId, waiterEmail, data) => {
+    const key = `${tenantId}:${waiterEmail}`;
+    const clients = waiterClients.get(key);
+    if (clients) {
+        const message = `data: ${JSON.stringify(data)}\n\n`;
+        clients.forEach(client => client.write(message));
+    }
+};
+
+// Register SSE client for a waiter
+const registerWaiterClient = (tenantId, waiterEmail, res) => {
+    const key = `${tenantId}:${waiterEmail}`;
+    if (!waiterClients.has(key)) {
+        waiterClients.set(key, new Set());
+    }
+    waiterClients.get(key).add(res);
+};
+
+// Unregister SSE client for a waiter — remove empty Set to prevent memory leak
+const unregisterWaiterClient = (tenantId, waiterEmail, res) => {
+    const key = `${tenantId}:${waiterEmail}`;
+    const clients = waiterClients.get(key);
+    if (clients) {
+        clients.delete(res);
+        if (clients.size === 0) {
+            waiterClients.delete(key);
+        }
+    }
+};
+
 // Register SSE client for order tracking
 const registerOrderClient = (orderId, res) => {
     if (!orderClients.has(orderId)) {
@@ -322,5 +384,7 @@ module.exports = {
     registerKitchenClient,
     unregisterKitchenClient,
     registerOrderClient,
-    unregisterOrderClient
+    unregisterOrderClient,
+    registerWaiterClient,
+    unregisterWaiterClient
 };

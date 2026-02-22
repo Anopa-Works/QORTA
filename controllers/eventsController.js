@@ -9,7 +9,9 @@ const {
     registerKitchenClient,
     unregisterKitchenClient,
     registerOrderClient,
-    unregisterOrderClient
+    unregisterOrderClient,
+    registerWaiterClient,
+    unregisterWaiterClient
 } = require('./orderController');
 const { formatOrderForKitchen, formatOrderForTracking } = require('../utils/orderUtils');
 
@@ -169,7 +171,69 @@ const orderTrackingStream = async (req, res) => {
     }
 };
 
+// SSE stream for waiter dashboard — keyed by waiter email
+const waiterStream = async (req, res) => {
+    try {
+        const { logger } = require('../utils/logger');
+        const { token } = req.query;
+
+        if (!token) {
+            return res.status(401).json({ success: false, error: 'Authentication required' });
+        }
+
+        // Verify token and confirm waiter belongs to this tenant
+        const decodedToken = await admin.auth().verifyIdToken(token);
+        const db = admin.firestore();
+        const adminDoc = await db.collection('admins').doc(decodedToken.uid).get();
+
+        if (!adminDoc.exists || adminDoc.data().tenantId !== req.tenant.id) {
+            return res.status(403).json({ success: false, error: 'Access denied' });
+        }
+
+        const waiterEmail = decodedToken.email;
+
+        logger.info('🔌 SSE Waiter connection', {
+            requestId: req.requestId,
+            tenantId: req.tenant?.id,
+            meta: { waiterEmail }
+        });
+
+        // Set SSE headers
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        res.setHeader('X-Accel-Buffering', 'no');
+
+        // Confirm connection to client
+        res.write(`data: ${JSON.stringify({ type: 'CONNECTED', waiterEmail })}\n\n`);
+
+        // Register this waiter's SSE connection
+        registerWaiterClient(req.tenant.id, waiterEmail, res);
+
+        // Heartbeat every 30 seconds
+        const heartbeat = setInterval(() => {
+            res.write(': heartbeat\n\n');
+        }, 30000);
+
+        // Clean up on disconnect
+        req.on('close', () => {
+            clearInterval(heartbeat);
+            unregisterWaiterClient(req.tenant.id, waiterEmail, res);
+        });
+    } catch (error) {
+        const { logger } = require('../utils/logger');
+        logger.error('Waiter SSE error', { meta: { message: error.message, code: error.code } });
+        if (!res.headersSent) {
+            return res.status(error.code === 'auth/argument-error' ? 401 : 500).json({
+                success: false,
+                error: 'Stream error'
+            });
+        }
+    }
+};
+
 module.exports = {
     kitchenStream,
-    orderTrackingStream
+    orderTrackingStream,
+    waiterStream
 };

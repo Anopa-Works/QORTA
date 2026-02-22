@@ -238,6 +238,27 @@ class QortaAPI {
         return eventSource;
     }
 
+    createWaiterStream(token, onMessage, onError) {
+        const url = `${this.baseUrl}/api/${this.tenantSlug}/events/waiter?token=${encodeURIComponent(token)}`;
+        const eventSource = new EventSource(url);
+
+        eventSource.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                onMessage(data);
+            } catch (error) {
+                // Parse error - skip malformed message
+            }
+        };
+
+        eventSource.onerror = (error) => {
+            eventSource.close();
+            if (onError) onError(error);
+        };
+
+        return eventSource;
+    }
+
     createOrderTrackingStream(orderId, onMessage, onError) {
         const url = `${this.baseUrl}/api/${this.tenantSlug}/events/order/${orderId}`;
         const eventSource = new EventSource(url);
