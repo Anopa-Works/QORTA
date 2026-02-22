@@ -71,8 +71,19 @@ async function init() {
   document.addEventListener('click', initAudio, { once: true });
 
   try {
-    // Optional auth for service mode - kitchen can be viewed without login
+    // Wait for Firebase auth
     const user = await waitForAuth();
+
+    // Check if restaurant config requires authentication
+    const configResponse = await fetch(`${api.baseUrl}/api/${api.tenantSlug}/config`);
+    const config = await configResponse.json();
+    const isServiceMode = config.data?.mode === 'service';
+
+    // In service mode, kitchen MUST be logged in to update orders
+    if (isServiceMode && !user) {
+      window.location.href = `/${api.tenantSlug}/login`;
+      return;
+    }
 
     if (authLoading) authLoading.style.display = 'none';
 
@@ -84,7 +95,7 @@ async function init() {
   } catch (error) {
     // Error:('Initialization error:', error);
     if (authLoading) authLoading.style.display = 'none';
-    // Still try to load kitchen even if auth fails
+    // Still try to load kitchen even if auth fails (for non-service mode)
     updateClock();
     setInterval(updateClock, 1000);
     await loadKitchenBoard();
