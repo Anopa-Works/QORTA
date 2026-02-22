@@ -33,6 +33,18 @@
                     Service Mode Active
                 </span>
             </div>
+            <div class="service-mode-control">
+                <span class="service-mode-label">Service Mode</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="serviceModeToggle" onchange="toggleServiceMode(this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+                <input type="number" id="serviceModeTableCount" min="1" max="100" value="10"
+                    title="Number of tables"
+                    style="width:54px;padding:4px 6px;border:1px solid #E2E8F0;border-radius:6px;font-size:13px;"
+                    onchange="toggleServiceMode(document.getElementById('serviceModeToggle').checked)">
+                <span style="font-size:12px;color:#64748B;">tables</span>
+            </div>
             <div class="header-actions">
                 <a href="#" id="kitchenLink" class="btn btn-secondary">Kitchen Board</a>
                 <button id="logoutBtn" class="btn-icon" onclick="handleLogout()" title="Logout">

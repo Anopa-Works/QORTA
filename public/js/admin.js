@@ -59,19 +59,66 @@ async function handleLogout() {
     window.location.href = 'admin-login.html';
 }
 
-// Check service mode status and display badge
+// Load and display service mode toggle
 async function checkServiceMode() {
     try {
         const response = await api.request('/config');
-        if (response.success && response.data) {
-            const { mode } = response.data;
+        if (!response.success) return;
+
+        const { mode, serviceMode } = response.data;
+        const isEnabled = mode === 'service';
+        const tableCount = serviceMode?.tableCount || 10;
+
+        // Update toggle UI
+        const toggle = document.getElementById('serviceModeToggle');
+        const tableInput = document.getElementById('serviceModeTableCount');
+        const indicator = document.getElementById('serviceModeIndicator');
+
+        if (toggle) toggle.checked = isEnabled;
+        if (tableInput) {
+            tableInput.value = tableCount;
+            tableInput.disabled = !isEnabled;
+        }
+        if (indicator) indicator.style.display = isEnabled ? 'inline-flex' : 'none';
+    } catch (error) {
+        // Silently fail
+    }
+}
+
+// Toggle service mode on/off
+async function toggleServiceMode(enabled) {
+    const toggle = document.getElementById('serviceModeToggle');
+    const tableInput = document.getElementById('serviceModeTableCount');
+    const tableCount = parseInt(tableInput?.value) || 10;
+
+    if (toggle) toggle.disabled = true;
+
+    try {
+        const token = await firebase.auth().currentUser?.getIdToken();
+        const response = await fetch(`${api.baseUrl}/api/${api.tenantSlug}/config/service-mode`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ enabled, tableCount })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            if (tableInput) tableInput.disabled = !enabled;
             const indicator = document.getElementById('serviceModeIndicator');
-            if (mode === 'service' && indicator) {
-                indicator.style.display = 'inline-flex';
-            }
+            if (indicator) indicator.style.display = enabled ? 'inline-flex' : 'none';
+        } else {
+            // Revert toggle on failure
+            if (toggle) toggle.checked = !enabled;
+            alert('Failed to update service mode: ' + (result.error || 'Unknown error'));
         }
     } catch (error) {
-        // Silently fail - service mode indicator is not critical
+        if (toggle) toggle.checked = !enabled;
+        alert('Failed to update service mode');
+    } finally {
+        if (toggle) toggle.disabled = false;
     }
 }
 

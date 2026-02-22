@@ -71,16 +71,10 @@ async function init() {
   document.addEventListener('click', initAudio, { once: true });
 
   try {
-    // Wait for Firebase auth
+    // Wait for Firebase auth - kitchen ALWAYS requires login to update orders
     const user = await waitForAuth();
 
-    // Check if restaurant config requires authentication
-    const configResponse = await fetch(`${api.baseUrl}/api/${api.tenantSlug}/config`);
-    const config = await configResponse.json();
-    const isServiceMode = config.data?.mode === 'service';
-
-    // In service mode, kitchen MUST be logged in to update orders
-    if (isServiceMode && !user) {
+    if (!user) {
       window.location.href = `/${api.tenantSlug}/login`;
       return;
     }
