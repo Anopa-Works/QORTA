@@ -212,12 +212,22 @@
         .menu-item {
             background: #fff;
             border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        }
+        .menu-item-image {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            display: block;
+            background: #e8e5de;
+        }
+        .menu-item-body {
             padding: 18px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             gap: 16px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
         }
         .menu-item-content {
             flex: 1;
@@ -558,11 +568,14 @@
                 }
                 listEl.innerHTML = state.menuItems.map(item => `
                     <div class="menu-item">
-                        <div class="menu-item-content">
-                            <div class="menu-item-name">${escapeHtml(item.name)}</div>
-                            ${item.description ? `<div class="menu-item-desc">${escapeHtml(item.description)}</div>` : ''}
+                        ${item.imageUrl ? `<img class="menu-item-image" src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.name)}" loading="lazy" onerror="this.style.display='none'">` : ''}
+                        <div class="menu-item-body">
+                            <div class="menu-item-content">
+                                <div class="menu-item-name">${escapeHtml(item.name)}</div>
+                                ${item.description ? `<div class="menu-item-desc">${escapeHtml(item.description)}</div>` : ''}
+                            </div>
+                            <button class="btn-select" data-item-id="${escapeHtml(item.id)}" type="button">SELECT</button>
                         </div>
-                        <button class="btn-select" data-item-id="${escapeHtml(item.id)}" type="button">SELECT</button>
                     </div>
                 `).join('');
 
