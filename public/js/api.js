@@ -111,6 +111,28 @@ class QortaAPI {
         }
     }
 
+    // Authenticated request without forced Content-Type — for FormData uploads
+    async authRequestRaw(endpoint, options = {}) {
+        let token = null;
+        try {
+            const user = firebase.auth().currentUser;
+            if (user) token = await user.getIdToken();
+        } catch (e) { /* proceed without token */ }
+
+        const headers = { ...options.headers };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const url = `${this.baseUrl}/api/${this.tenantSlug}${endpoint}`;
+        const response = await fetch(url, { ...options, headers });
+
+        if (response.status === 401) {
+            this.safeRedirect(`/${this.tenantSlug}/login`);
+            throw new Error('Unauthorized');
+        }
+
+        return response;
+    }
+
     /**
      * Safe redirect - validates destination is within allowed paths
      * Prevents open redirect vulnerabilities

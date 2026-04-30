@@ -30,6 +30,13 @@ const getDb = () => {
     return admin.firestore();
 };
 
+// Get Firebase Storage bucket
+const getStorage = () => {
+    initializeFirebase();
+    const bucket = process.env.FIREBASE_STORAGE_BUCKET || `${process.env.FIREBASE_PROJECT_ID}.appspot.com`;
+    return admin.storage().bucket(bucket);
+};
+
 // Collection names for multi-tenant structure
 const COLLECTIONS = {
     TENANTS: 'tenants',
@@ -44,6 +51,7 @@ const COLLECTIONS = {
 module.exports = {
     initializeFirebase,
     getDb,
+    getStorage,
     COLLECTIONS,
     admin
 };

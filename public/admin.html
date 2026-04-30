@@ -8,7 +8,7 @@
     <meta name="description" content="Restaurant admin dashboard">
     <base href="/">
     <link rel="stylesheet" href="css/main.css">
-    <link rel="stylesheet" href="css/admin.css">
+    <link rel="stylesheet" href="css/admin.css?v=6">
 </head>
 
 <body>
@@ -176,9 +176,22 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="itemImage">Image URL</label>
-                    <input type="url" id="itemImage" name="imageUrl" placeholder="https://example.com/burger.jpg"
-                        oninput="previewImage(this.value)">
+                    <label>Item Image</label>
+                    <div id="imageDropZone" class="image-drop-zone"
+                        ondragover="handleDragOver(event)"
+                        ondragleave="handleDragLeave(event)"
+                        ondrop="handleDrop(event)"
+                        onclick="document.getElementById('imageFileInput').click()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        <p id="dropZoneLabel">Drag &amp; drop image here, or click to browse</p>
+                        <p class="drop-hint">JPEG, PNG, WebP &middot; Max 5 MB</p>
+                    </div>
+                    <input type="file" id="imageFileInput" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none" onchange="handleFileSelect(this.files[0])">
+                    <input type="hidden" id="itemImage" name="imageUrl">
                     <div id="imagePreview" class="image-preview"></div>
                 </div>
 
@@ -261,7 +274,7 @@
     <script src="js/firebase-config.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/api.js"></script>
-    <script src="js/admin.js"></script>
+    <script src="js/admin.js?v=6"></script>
 </body>
 
 </html>

@@ -734,6 +734,51 @@
     object-fit: cover;
 }
 
+.image-drop-zone {
+    border: 2px dashed var(--color-border, #333);
+    border-radius: var(--radius-md);
+    padding: 24px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    color: var(--color-text-secondary, #888);
+    font-size: 13px;
+    user-select: none;
+}
+
+.image-drop-zone:hover {
+    border-color: var(--color-primary, #fff);
+    background: rgba(255,255,255,0.04);
+}
+
+.image-drop-zone.dragover {
+    border-color: var(--color-primary, #fff);
+    background: rgba(255,255,255,0.08);
+    color: var(--color-text, #fff);
+}
+
+.image-drop-zone.uploading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.image-drop-zone svg {
+    display: block;
+    margin: 0 auto 8px;
+    opacity: 0.5;
+}
+
+.image-drop-zone p {
+    margin: 0;
+    line-height: 1.4;
+}
+
+.image-drop-zone .drop-hint {
+    font-size: 11px;
+    margin-top: 4px;
+    opacity: 0.6;
+}
+
 /* Button Variants */
 .btn-danger {
     background-color: #DC2626;

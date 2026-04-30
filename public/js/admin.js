@@ -435,6 +435,7 @@ function showAddItemModal() {
     document.getElementById('itemAvailable').checked = true;
     document.getElementById('imagePreview').innerHTML = '';
     document.getElementById('imagePreview').classList.remove('has-image');
+    resetDropZone();
     document.getElementById('itemModal').style.display = 'flex';
 }
 
@@ -452,8 +453,11 @@ function editItem(itemId) {
     document.getElementById('itemAvailable').checked = item.available !== false;
     document.getElementById('itemFeatured').checked = item.isFeatured === true;
 
+    resetDropZone();
     if (item.imageUrl) {
         previewImage(item.imageUrl);
+        const label = document.getElementById('dropZoneLabel');
+        if (label) label.textContent = 'Image saved — drop a new one to replace';
     } else {
         document.getElementById('imagePreview').innerHTML = '';
         document.getElementById('imagePreview').classList.remove('has-image');
@@ -464,6 +468,7 @@ function editItem(itemId) {
 
 function closeItemModal() {
     document.getElementById('itemModal').style.display = 'none';
+    resetDropZone();
 }
 
 function previewImage(url) {
@@ -474,6 +479,66 @@ function previewImage(url) {
     } else {
         preview.innerHTML = '';
         preview.classList.remove('has-image');
+    }
+}
+
+function resetDropZone() {
+    const zone = document.getElementById('imageDropZone');
+    const label = document.getElementById('dropZoneLabel');
+    if (zone) zone.classList.remove('uploading', 'dragover');
+    if (label) label.textContent = 'Drag & drop image here, or click to browse';
+    const fi = document.getElementById('imageFileInput');
+    if (fi) fi.value = '';
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    document.getElementById('imageDropZone').classList.add('dragover');
+}
+
+function handleDragLeave(e) {
+    document.getElementById('imageDropZone').classList.remove('dragover');
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('imageDropZone').classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) handleFileSelect(file);
+}
+
+async function handleFileSelect(file) {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+        showToast('Please select an image file', 'error');
+        return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+        showToast('Image must be under 5 MB', 'error');
+        return;
+    }
+
+    const zone = document.getElementById('imageDropZone');
+    const label = document.getElementById('dropZoneLabel');
+    zone.classList.add('uploading');
+    label.textContent = 'Uploading…';
+
+    try {
+        const form = new FormData();
+        form.append('image', file);
+        const res = await api.authRequestRaw('/menu/upload-image', { method: 'POST', body: form });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Upload failed');
+
+        document.getElementById('itemImage').value = data.data.url;
+        previewImage(data.data.url);
+        label.textContent = file.name;
+        showToast('Image uploaded');
+    } catch (err) {
+        showToast('Upload failed: ' + err.message, 'error');
+        resetDropZone();
+    } finally {
+        zone.classList.remove('uploading');
     }
 }
 
