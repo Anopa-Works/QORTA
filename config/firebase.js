@@ -37,7 +37,8 @@ const COLLECTIONS = {
     ADMINS: 'admins',
     MENU_ITEMS: 'menuItems',
     CATEGORIES: 'categories',
-    ORDERS: 'orders'
+    ORDERS: 'orders',
+    EVENTS: 'events'
 };
 
 module.exports = {

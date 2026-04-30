@@ -58,6 +58,8 @@ const getRelativeTime = (timestamp) => {
     return time.toLocaleDateString();
 };
 
+const { ORDER_CATEGORY } = require('../config/constants');
+
 /**
  * Format order for kitchen board display
  */
@@ -67,6 +69,9 @@ const formatOrderForKitchen = (order) => {
         orderNumber: order.orderNumber,
         status: order.status,
         orderType: order.orderType,
+        orderCategory: order.orderCategory || ORDER_CATEGORY.RESTAURANT,
+        eventId: order.eventId || null,
+        seatReference: order.seatReference || null,
         tableNumber: order.tableNumber,
         deliveryPlatform: order.deliveryPlatform,
         customerName: order.customerName || '',

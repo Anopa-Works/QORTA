@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>QORTA Event</title>
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="theme-color" content="#333333">
+    <link rel="apple-touch-icon" href="/logos/q-mark.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #333333;
+            color: #fff;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .screen {
+            display: none;
+            min-height: 100vh;
+        }
+        .screen.active {
+            display: block;
+        }
+
+        /* ================== LOADING ================== */
+        #screen-loading {
+            background: #333333;
+            color: #fff;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 24px;
+        }
+        #screen-loading.active { display: flex; }
+
+        .loader-logo {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 32px;
+            opacity: 0.95;
+        }
+        .loader-event-name {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: clamp(40px, 8vw, 72px);
+            letter-spacing: 2px;
+            color: #fff;
+            line-height: 1.05;
+            max-width: 90vw;
+        }
+        .loader-powered {
+            margin-top: 24px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            color: #08C0E4;
+            letter-spacing: 0.5px;
+        }
+        .loader-dots::after {
+            content: '';
+            display: inline-block;
+            animation: dots 1.4s steps(3, end) infinite;
+        }
+        @keyframes dots {
+            0% { content: ''; }
+            33% { content: '.'; }
+            66% { content: '..'; }
+            100% { content: '...'; }
+        }
+
+        /* ================== SEAT INPUT ================== */
+        #screen-seat {
+            background: #F0EEE9;
+            color: #333333;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 32px 24px;
+            text-align: center;
+        }
+        #screen-seat.active { display: flex; }
+
+        .seat-heading {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 22px;
+            font-weight: 600;
+            color: #333333;
+            margin-bottom: 32px;
+            line-height: 1.3;
+            max-width: 320px;
+        }
+
+        .seat-inputs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            width: 100%;
+            max-width: 320px;
+        }
+        .seat-input {
+            flex: 1;
+            padding: 18px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 22px;
+            font-weight: 600;
+            text-align: center;
+            border: 2px solid #d8d4cc;
+            border-radius: 12px;
+            background: #fff;
+            color: #333333;
+            text-transform: uppercase;
+            min-width: 0;
+        }
+        .seat-input:focus {
+            outline: none;
+            border-color: #08C0E4;
+        }
+        .seat-preview {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 36px;
+            letter-spacing: 4px;
+            color: #333333;
+            margin-bottom: 24px;
+            min-height: 44px;
+        }
+        .seat-preview.empty {
+            color: #aaa;
+        }
+        .seat-validation {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            color: #c0392b;
+            margin-bottom: 16px;
+            min-height: 20px;
+            font-weight: 500;
+        }
+        .btn-continue {
+            width: 100%;
+            max-width: 320px;
+            padding: 18px;
+            background: #08C0E4;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        .btn-continue:active { transform: scale(0.98); }
+        .btn-continue:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        /* ================== MENU ================== */
+        #screen-menu {
+            background: #F0EEE9;
+            color: #333333;
+            display: none;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        #screen-menu.active { display: flex; }
+
+        .menu-header {
+            background: #333333;
+            color: #fff;
+            padding: 20px 20px 16px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .menu-event-name {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 24px;
+            letter-spacing: 1.5px;
+            line-height: 1.1;
+            margin-bottom: 4px;
+        }
+        .menu-seat {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            color: #08C0E4;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .menu-list {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-bottom: 64px;
+        }
+        .menu-item {
+            background: #fff;
+            border-radius: 14px;
+            padding: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        }
+        .menu-item-content {
+            flex: 1;
+            min-width: 0;
+        }
+        .menu-item-name {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            color: #333333;
+            margin-bottom: 4px;
+        }
+        .menu-item-desc {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            color: #666;
+            line-height: 1.4;
+        }
+        .btn-select {
+            padding: 12px 20px;
+            background: #08C0E4;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        .btn-select:active { transform: scale(0.96); }
+        .btn-select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .menu-empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        /* ================== CONFIRMATION OVERLAY ================== */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(51, 51, 51, 0.96);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 24px;
+            z-index: 100;
+            color: #fff;
+        }
+        .overlay.active { display: flex; }
+        .overlay-box {
+            max-width: 320px;
+        }
+        .overlay-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 44px;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+            line-height: 1.05;
+        }
+        .overlay-body {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 16px;
+            font-weight: 500;
+            color: #e8e8e8;
+            line-height: 1.4;
+        }
+        .overlay.error .overlay-title {
+            color: #FF8A65;
+        }
+
+        /* ================== INACTIVE / NOT FOUND ================== */
+        .state-message {
+            background: #333333;
+            color: #fff;
+            display: none;
+            min-height: 100vh;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 32px;
+        }
+        .state-message.active { display: flex; }
+        .state-message .title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 36px;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+        }
+        .state-message .body {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 16px;
+            color: #ccc;
+            max-width: 320px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Loading screen (active by default to avoid FOUC) -->
+    <section class="screen state-message active" id="screen-loading">
+        <img src="/logos/q-mark.png" alt="QORTA" class="loader-logo" id="loaderLogo">
+        <h1 class="loader-event-name" id="loaderEventName">Loading<span class="loader-dots"></span></h1>
+        <p class="loader-powered">Powered by Qorta</p>
+    </section>
+
+    <!-- Inactive event -->
+    <section class="state-message" id="screen-inactive">
+        <div class="title">EVENT INACTIVE</div>
+        <div class="body">This event is no longer active.</div>
+    </section>
+
+    <!-- Not found / generic error -->
+    <section class="state-message" id="screen-not-found">
+        <div class="title">EVENT NOT FOUND</div>
+        <div class="body">We couldn't find this event. Please check the QR code or ask your host.</div>
+    </section>
+
+    <!-- Seat input -->
+    <section class="screen" id="screen-seat">
+        <h1 class="seat-heading">Welcome. Enter your seat.</h1>
+        <div class="seat-inputs">
+            <input id="seatNumber" class="seat-input" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="3" placeholder="1" autocomplete="off">
+            <input id="seatLetter" class="seat-input" type="text" maxlength="1" placeholder="A" autocomplete="off">
+        </div>
+        <div id="seatPreview" class="seat-preview empty">—</div>
+        <div id="seatValidation" class="seat-validation"></div>
+        <button id="seatContinueBtn" class="btn-continue" type="button">Continue</button>
+    </section>
+
+    <!-- Menu -->
+    <section class="screen" id="screen-menu">
+        <header class="menu-header">
+            <h1 class="menu-event-name" id="menuEventName"></h1>
+            <div class="menu-seat" id="menuSeat"></div>
+        </header>
+        <div class="menu-list" id="menuList">
+            <div class="menu-empty">Loading menu…</div>
+        </div>
+    </section>
+
+    <!-- Confirmation overlay -->
+    <div class="overlay" id="overlayConfirm">
+        <div class="overlay-box">
+            <div class="overlay-title">ORDER PLACED</div>
+            <div class="overlay-body">Your waiter will be with you shortly.</div>
+        </div>
+    </div>
+
+    <!-- Error overlay -->
+    <div class="overlay error" id="overlayError">
+        <div class="overlay-box">
+            <div class="overlay-title">OOPS!</div>
+            <div class="overlay-body">An error occurred at our event,<br>try again in a few seconds.</div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            // Resolve slug from URL: /event/<slug>
+            const pathParts = window.location.pathname.split('/').filter(Boolean);
+            const slug = pathParts[1] || '';
+
+            const screens = {
+                loading: document.getElementById('screen-loading'),
+                seat: document.getElementById('screen-seat'),
+                menu: document.getElementById('screen-menu'),
+                inactive: document.getElementById('screen-inactive'),
+                notFound: document.getElementById('screen-not-found')
+            };
+            const confirmOverlay = document.getElementById('overlayConfirm');
+            const errorOverlay = document.getElementById('overlayError');
+
+            const state = {
+                event: null,
+                seatReference: null,
+                menuItems: [],
+                placing: false
+            };
+
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text == null ? '' : String(text);
+                return div.innerHTML;
+            }
+
+            function show(name) {
+                Object.values(screens).forEach(el => el && el.classList.remove('active'));
+                if (screens[name]) screens[name].classList.add('active');
+            }
+
+            // -------- Loading -> fetch event --------
+            async function init() {
+                show('loading');
+                if (!slug) {
+                    show('notFound');
+                    return;
+                }
+
+                // Minimum display time so the loader doesn't flash
+                const minWait = new Promise(r => setTimeout(r, 800));
+
+                try {
+                    const resp = await fetch(`/api/events/${encodeURIComponent(slug)}`);
+                    const data = await resp.json().catch(() => ({}));
+                    await minWait;
+
+                    if (resp.status === 404 || !data || !data.success) {
+                        show('notFound');
+                        return;
+                    }
+
+                    if (data.data.inactive || data.data.status === 'inactive') {
+                        // Show event name briefly on loading screen first, then transition
+                        document.getElementById('loaderEventName').textContent = data.data.name || 'Event';
+                        show('inactive');
+                        return;
+                    }
+
+                    state.event = data.data;
+                    document.getElementById('loaderEventName').textContent = state.event.name;
+
+                    // Brief moment on loading with name resolved before going to seat input
+                    setTimeout(() => goToSeat(), 600);
+                } catch (e) {
+                    await minWait;
+                    show('notFound');
+                }
+            }
+
+            // -------- Seat input --------
+            const seatNumberEl = document.getElementById('seatNumber');
+            const seatLetterEl = document.getElementById('seatLetter');
+            const seatPreviewEl = document.getElementById('seatPreview');
+            const seatValidationEl = document.getElementById('seatValidation');
+            const seatContinueBtn = document.getElementById('seatContinueBtn');
+
+            function goToSeat() {
+                show('seat');
+                setTimeout(() => seatNumberEl.focus(), 100);
+                updateSeatPreview();
+            }
+
+            function sanitizeSeatNumber(v) {
+                return String(v || '').replace(/[^0-9]/g, '').slice(0, 3);
+            }
+            function sanitizeSeatLetter(v) {
+                return String(v || '').replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 1);
+            }
+            function currentSeat() {
+                const n = sanitizeSeatNumber(seatNumberEl.value);
+                const l = sanitizeSeatLetter(seatLetterEl.value);
+                return { n, l, full: (n && l) ? `${n}-${l}` : '' };
+            }
+            function updateSeatPreview() {
+                const { n, l, full } = currentSeat();
+                if (full) {
+                    seatPreviewEl.textContent = full;
+                    seatPreviewEl.classList.remove('empty');
+                } else {
+                    seatPreviewEl.textContent = n || l ? `${n || '_'}-${l || '_'}` : '—';
+                    seatPreviewEl.classList.add('empty');
+                }
+                seatValidationEl.textContent = '';
+            }
+
+            seatNumberEl.addEventListener('input', () => {
+                seatNumberEl.value = sanitizeSeatNumber(seatNumberEl.value);
+                updateSeatPreview();
+                // Auto-jump to letter once 2 digits typed (covers seats up to 99)
+                if (seatNumberEl.value.length >= 2 && seatLetterEl.value === '') {
+                    seatLetterEl.focus();
+                }
+            });
+            seatLetterEl.addEventListener('input', () => {
+                seatLetterEl.value = sanitizeSeatLetter(seatLetterEl.value);
+                updateSeatPreview();
+            });
+
+            seatContinueBtn.addEventListener('click', () => {
+                const { n, l, full } = currentSeat();
+                if (!n || !l) {
+                    seatValidationEl.textContent = 'Please enter both seat number and location.';
+                    return;
+                }
+                if (parseInt(n, 10) < 1) {
+                    seatValidationEl.textContent = 'Seat number must be 1 or higher.';
+                    return;
+                }
+                state.seatReference = full;
+                goToMenu();
+            });
+
+            // -------- Menu --------
+            async function goToMenu() {
+                show('menu');
+                document.getElementById('menuEventName').textContent = state.event.name;
+                document.getElementById('menuSeat').textContent = `Seat ${state.seatReference}`;
+                await loadMenu();
+            }
+
+            async function loadMenu() {
+                const listEl = document.getElementById('menuList');
+                listEl.innerHTML = '<div class="menu-empty">Loading menu…</div>';
+
+                try {
+                    const resp = await fetch(`/api/events/${encodeURIComponent(slug)}/menu`);
+                    const data = await resp.json().catch(() => ({}));
+                    if (!resp.ok || !data.success) {
+                        listEl.innerHTML = '<div class="menu-empty">Menu not available yet. Please ask your waiter.</div>';
+                        return;
+                    }
+                    state.menuItems = data.data || [];
+                    renderMenu();
+                } catch (e) {
+                    listEl.innerHTML = '<div class="menu-empty">Menu not available yet. Please ask your waiter.</div>';
+                }
+            }
+
+            function renderMenu() {
+                const listEl = document.getElementById('menuList');
+                if (!state.menuItems.length) {
+                    listEl.innerHTML = '<div class="menu-empty">Menu not available yet. Please ask your waiter.</div>';
+                    return;
+                }
+                listEl.innerHTML = state.menuItems.map(item => `
+                    <div class="menu-item">
+                        <div class="menu-item-content">
+                            <div class="menu-item-name">${escapeHtml(item.name)}</div>
+                            ${item.description ? `<div class="menu-item-desc">${escapeHtml(item.description)}</div>` : ''}
+                        </div>
+                        <button class="btn-select" data-item-id="${escapeHtml(item.id)}" type="button">SELECT</button>
+                    </div>
+                `).join('');
+
+                listEl.querySelectorAll('.btn-select').forEach(btn => {
+                    btn.addEventListener('click', () => placeOrder(btn.dataset.itemId, btn));
+                });
+            }
+
+            // -------- Place order (optimistic + 3s debounce) --------
+            async function placeOrder(itemId, btnEl) {
+                if (state.placing) return;
+                state.placing = true;
+
+                // Disable the tapped button (and all SELECT buttons) for 3 seconds — debounce.
+                const allBtns = document.querySelectorAll('.btn-select');
+                allBtns.forEach(b => { b.disabled = true; });
+                setTimeout(() => {
+                    allBtns.forEach(b => { b.disabled = false; });
+                    state.placing = false;
+                }, 3000);
+
+                // Optimistic confirmation
+                showOverlay(confirmOverlay);
+
+                try {
+                    const resp = await fetch(`/api/events/${encodeURIComponent(slug)}/orders`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ itemId, seatReference: state.seatReference })
+                    });
+                    const data = await resp.json().catch(() => ({}));
+                    if (!resp.ok || !data.success) {
+                        throw new Error(data.error || 'order_failed');
+                    }
+                    // Hide confirmation after a short pause so guest reads it
+                    setTimeout(() => hideOverlay(confirmOverlay), 2400);
+                } catch (e) {
+                    hideOverlay(confirmOverlay);
+                    showOverlay(errorOverlay);
+                    setTimeout(() => hideOverlay(errorOverlay), 3200);
+                }
+            }
+
+            function showOverlay(el) { el.classList.add('active'); }
+            function hideOverlay(el) { el.classList.remove('active'); }
+
+            // Boot
+            init();
+        })();
+    </script>
+</body>
+
+</html>

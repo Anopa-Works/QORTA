@@ -26,6 +26,7 @@ const menuRoutes = require('./routes/menu');
 const categoryRoutes = require('./routes/categories');
 const orderRoutes = require('./routes/orders');
 const eventRoutes = require('./routes/events');
+const eventBookingRoutes = require('./routes/eventBookings');
 const authRoutes = require('./routes/auth');
 const configRoutes = require('./routes/config');
 
@@ -191,11 +192,21 @@ app.get('/platform/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'platform', 'admin.html'));
 });
 
+// Guest-facing event page (public, no auth)
+app.get('/event/:slug', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'event.html'));
+});
+
 // Super admin routes (SUPER_ADMIN only)
 app.use('/api/platform', apiLimiter, platformRoutes);
 
 // Legacy tenant routes (for existing admin functionality)
 app.use('/api/tenants', apiLimiter, tenantRoutes);
+
+// Public event-bookings API (no auth, no tenant scope — events are top-level)
+// MUST be mounted before /api/:slug/* routes so /api/events/<slug> doesn't get
+// captured by tenant-scoped patterns.
+app.use('/api/events', apiLimiter, eventBookingRoutes);
 
 // Tenant-scoped API routes with rate limiting
 app.use('/api/:slug/config', apiLimiter, configRoutes);

@@ -5,6 +5,14 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "type": "node",
+            "request": "launch",
+            "name": "Run mime",
+            "runtimeExecutable": "mime",
+            "cwd": "${workspaceFolder}/node_modules/send",
+            "args": []
+        },
+        {
             "type": "chrome",
             "request": "launch",
             "name": "Launch Chrome against localhost",

@@ -8,12 +8,21 @@
 const express = require('express');
 const router = express.Router();
 const admin = require('firebase-admin');
-const { getDb } = require('../config/firebase');
+const { getDb, COLLECTIONS } = require('../config/firebase');
 const { superAdminAuth } = require('../middleware/superAdminAuth');
 const { logger } = require('../utils/logger');
 
 // Slug validation regex: lowercase alphanumeric with hyphens (no leading/trailing hyphens)
 const SLUG_REGEX = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+// Reserved slugs that collide with framework / system / feature routes.
+// A tenant with any of these slugs would be unreachable.
+const RESERVED_SLUGS = new Set([
+    'api', 'platform', 'health',
+    'js', 'css', 'images', 'logos', 'landing', 'favicon.ico',
+    'event', 'events',
+    'admin', 'kitchen', 'login', 'waiter', 'waiter-login', 'history', 'track'
+]);
 
 /**
  * Validate slug format
@@ -36,6 +45,11 @@ function validateSlug(slug) {
     // Check format
     if (!SLUG_REGEX.test(slug)) {
         return { valid: false, error: 'Slug must contain only lowercase letters, numbers, and hyphens (no leading/trailing hyphens)' };
+    }
+
+    // Block reserved slugs
+    if (RESERVED_SLUGS.has(slug)) {
+        return { valid: false, error: `Slug "${slug}" is reserved and cannot be used` };
     }
 
     return { valid: true };
@@ -500,6 +514,131 @@ router.patch('/staff/:uid/tables', superAdminAuth, async (req, res) => {
             success: false,
             error: 'Failed to update table assignment'
         });
+    }
+});
+
+// ================== EVENT BOOKINGS (super admin) ==================
+// Manages the `events` collection. Note: distinct from routes/events.js (SSE).
+
+const Event = require('../models/Event');
+const { EVENT_STATUS } = Event;
+
+const VALID_EVENT_STATUSES = new Set([EVENT_STATUS.ACTIVE, EVENT_STATUS.INACTIVE]);
+
+router.get('/events', superAdminAuth, async (req, res) => {
+    try {
+        const events = await Event.listAll();
+
+        const tenantIds = [...new Set(events.map(e => e.tenantId).filter(Boolean))];
+        const db = getDb();
+        const tenantSnapshots = await Promise.all(
+            tenantIds.map(tid => db.collection(COLLECTIONS.TENANTS).doc(tid).get())
+        );
+        const tenantNames = Object.fromEntries(
+            tenantSnapshots.filter(d => d.exists).map(d => [d.id, d.data().name])
+        );
+
+        res.json({
+            success: true,
+            data: events.map(e => e.toAdminJSON({ tenantName: tenantNames[e.tenantId] || null })),
+            count: events.length
+        });
+    } catch (error) {
+        logger.error('Failed to list events', {
+            requestId: req.requestId,
+            meta: { error: error.message }
+        });
+        res.status(500).json({ success: false, error: 'Failed to list events' });
+    }
+});
+
+router.post('/events', superAdminAuth, async (req, res) => {
+    try {
+        const { name, date, tenantId } = req.body || {};
+
+        if (!name || !String(name).trim()) {
+            return res.status(400).json({ success: false, error: 'Event name is required' });
+        }
+        if (!tenantId || typeof tenantId !== 'string') {
+            return res.status(400).json({ success: false, error: 'tenantId is required' });
+        }
+
+        const db = getDb();
+        const tenantDoc = await db.collection(COLLECTIONS.TENANTS).doc(tenantId).get();
+        if (!tenantDoc.exists) {
+            return res.status(404).json({ success: false, error: 'Tenant not found' });
+        }
+
+        const event = await Event.create({ name, date, tenantId });
+
+        const proto = (req.headers['x-forwarded-proto'] || req.protocol || 'http').split(',')[0].trim();
+        const host = (req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+        const origin = process.env.PUBLIC_BASE_URL || `${proto}://${host}`;
+        const qrUrl = `${origin.replace(/\/+$/, '')}/event/${event.slug}`;
+
+        await Event.setQrUrl(event.id, qrUrl);
+        event.qrUrl = qrUrl;
+
+        logger.info('Event created', {
+            requestId: req.requestId,
+            tenantId,
+            meta: { eventId: event.id, slug: event.slug, createdBy: req.user.email }
+        });
+
+        res.status(201).json({ success: true, data: event.toAdminJSON() });
+    } catch (error) {
+        logger.error('Failed to create event', {
+            requestId: req.requestId,
+            meta: { error: error.message }
+        });
+        res.status(500).json({ success: false, error: 'Failed to create event' });
+    }
+});
+
+router.get('/events/:id', superAdminAuth, async (req, res) => {
+    try {
+        const event = await Event.findById(req.params.id);
+        if (!event) {
+            return res.status(404).json({ success: false, error: 'Event not found' });
+        }
+        res.json({ success: true, data: event.toAdminJSON() });
+    } catch (error) {
+        logger.error('Failed to fetch event', {
+            requestId: req.requestId,
+            meta: { error: error.message }
+        });
+        res.status(500).json({ success: false, error: 'Failed to fetch event' });
+    }
+});
+
+router.patch('/events/:id/status', superAdminAuth, async (req, res) => {
+    try {
+        const { status } = req.body || {};
+        if (!VALID_EVENT_STATUSES.has(status)) {
+            return res.status(400).json({
+                success: false,
+                error: `status must be one of: ${[...VALID_EVENT_STATUSES].join(', ')}`
+            });
+        }
+
+        const event = await Event.findById(req.params.id);
+        if (!event) {
+            return res.status(404).json({ success: false, error: 'Event not found' });
+        }
+
+        await Event.setStatus(event.id, status);
+        logger.info('Event status updated', {
+            requestId: req.requestId,
+            meta: { eventId: event.id, status, updatedBy: req.user.email }
+        });
+
+        res.json({ success: true, data: { id: event.id, status } });
+    } catch (error) {
+        logger.error('Failed to update event status', {
+            requestId: req.requestId,
+            meta: { error: error.message }
+        });
+        res.status(500).json({ success: false, error: 'Failed to update event status' });
     }
 });
 

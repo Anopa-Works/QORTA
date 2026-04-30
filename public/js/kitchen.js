@@ -195,21 +195,34 @@ function renderColumn(containerId, orders, status) {
   container.innerHTML = orders.map(order => createOrderCard(order, status)).join('');
 }
 
-// Create order card HTML
-function createOrderCard(order, status) {
-  const badgesHtml = [];
+const ORDER_TYPE_BADGES = {
+  DINE_IN: { className: 'dine-in', label: 'Dine-in' },
+  DELIVERY: { className: 'delivery', label: 'Delivery' },
+  TAKEAWAY: { className: 'takeaway', label: 'Takeaway' }
+};
 
+function buildBadges(order) {
+  if (order.orderCategory === 'event') {
+    const out = ['<span class="order-meta-badge event">EVENT</span>'];
+    if (order.seatReference) {
+      out.push(`<span class="order-meta-badge seat">Seat ${esc(order.seatReference)}</span>`);
+    }
+    return out;
+  }
+
+  const out = [];
   if (order.tableNumber) {
-    badgesHtml.push(`<span class="order-meta-badge dine-in">Table ${esc(order.tableNumber)}</span>`);
+    out.push(`<span class="order-meta-badge dine-in">Table ${esc(order.tableNumber)}</span>`);
   }
+  const type = ORDER_TYPE_BADGES[order.orderType];
+  if (type) {
+    out.push(`<span class="order-meta-badge ${type.className}">${type.label}</span>`);
+  }
+  return out;
+}
 
-  if (order.orderType === 'DINE_IN') {
-    badgesHtml.push('<span class="order-meta-badge dine-in">Dine-in</span>');
-  } else if (order.orderType === 'DELIVERY') {
-    badgesHtml.push('<span class="order-meta-badge delivery">Delivery</span>');
-  } else if (order.orderType === 'TAKEAWAY') {
-    badgesHtml.push('<span class="order-meta-badge takeaway">Takeaway</span>');
-  }
+function createOrderCard(order, status) {
+  const badgesHtml = buildBadges(order);
 
   const actionButton = getActionButton(order.id, status);
 

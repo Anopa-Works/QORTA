@@ -5,7 +5,7 @@
  */
 
 const { getDb } = require('../config/firebase'); // COLLECTIONS removed, we use dynamic paths
-const { ORDER_STATUS, ORDER_TYPE, PAYMENT_STATUS } = require('../config/constants');
+const { ORDER_STATUS, ORDER_TYPE, ORDER_CATEGORY, PAYMENT_STATUS } = require('../config/constants');
 
 class Order {
     constructor(data) {
@@ -14,6 +14,9 @@ class Order {
         this.orderNumber = data.orderNumber;
         this.status = data.status ?? ORDER_STATUS.NEW;
         this.orderType = data.orderType ?? ORDER_TYPE.DINE_IN;
+        this.orderCategory = data.orderCategory ?? ORDER_CATEGORY.RESTAURANT;
+        this.eventId = data.eventId ?? null;
+        this.seatReference = data.seatReference ?? null;
         this.tableNumber = data.tableNumber ?? null;
         this.deliveryPlatform = data.deliveryPlatform ?? null;
         this.customerName = data.customerName ?? '';
@@ -46,6 +49,9 @@ class Order {
             orderNumber: this.orderNumber,
             status: this.status,
             orderType: this.orderType,
+            orderCategory: this.orderCategory,
+            eventId: this.eventId,
+            seatReference: this.seatReference,
             tableNumber: this.tableNumber,
             deliveryPlatform: this.deliveryPlatform,
             customerName: this.customerName,

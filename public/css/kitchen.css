@@ -390,6 +390,16 @@ body.kitchen-page {
     color: #2F855A;
 }
 
+.order-meta-badge.event {
+    background: #08C0E4;
+    color: #fff;
+}
+
+.order-meta-badge.seat {
+    background: #E0F7FB;
+    color: #0A7488;
+}
+
 /* Items List */
 .order-items-list {
     margin-bottom: 20px;

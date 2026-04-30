@@ -386,5 +386,8 @@ module.exports = {
     registerOrderClient,
     unregisterOrderClient,
     registerWaiterClient,
-    unregisterWaiterClient
+    unregisterWaiterClient,
+    broadcastToKitchen,
+    broadcastToOrder,
+    broadcastToWaiter
 };

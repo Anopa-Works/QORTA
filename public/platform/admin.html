@@ -385,6 +385,103 @@
             padding: 40px;
             color: #888;
         }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            border-bottom: 1px solid #333;
+            margin-bottom: 24px;
+        }
+        .tab {
+            padding: 12px 20px;
+            background: transparent;
+            color: #888;
+            border: none;
+            border-bottom: 2px solid transparent;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: -1px;
+        }
+        .tab.active {
+            color: #fff;
+            border-bottom-color: #fff;
+        }
+        .tab-panel {
+            display: none;
+        }
+        .tab-panel.active {
+            display: block;
+        }
+
+        /* Event card */
+        .event-card {
+            background: #1a1a1a;
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .event-card:hover {
+            background: #222;
+        }
+        .event-info h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .event-meta {
+            display: flex;
+            gap: 16px;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #666;
+        }
+        .event-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        /* QR detail layout */
+        .qr-detail {
+            text-align: center;
+        }
+        .qr-detail #eventQrOutput {
+            display: inline-block;
+            background: #fff;
+            padding: 16px;
+            border-radius: 12px;
+            margin: 16px 0;
+        }
+        .qr-detail-meta {
+            color: #888;
+            font-size: 13px;
+            margin-bottom: 16px;
+            word-break: break-all;
+        }
+        .btn-danger {
+            flex: 1;
+            padding: 12px;
+            background: transparent;
+            color: #ef4444;
+            border: 1px solid #5b1a1a;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.08);
+        }
+        .btn-danger:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 
@@ -421,13 +518,80 @@
         </header>
 
         <div class="container">
-            <div class="section-header">
-                <h2 class="section-title">Tenants</h2>
-                <button class="btn-create" onclick="openCreateModal()">+ Create Tenant</button>
+            <div class="tabs" role="tablist">
+                <button class="tab active" id="tab-btn-restaurants" onclick="switchTab('restaurants')">Restaurants</button>
+                <button class="tab" id="tab-btn-events" onclick="switchTab('events')">Events</button>
             </div>
 
-            <div id="tenantList" class="tenant-list">
-                <div class="loading">Loading tenants...</div>
+            <!-- Restaurants tab (existing flow, untouched) -->
+            <div class="tab-panel active" id="tab-restaurants">
+                <div class="section-header">
+                    <h2 class="section-title">Tenants</h2>
+                    <button class="btn-create" onclick="openCreateModal()">+ Create Tenant</button>
+                </div>
+
+                <div id="tenantList" class="tenant-list">
+                    <div class="loading">Loading tenants...</div>
+                </div>
+            </div>
+
+            <!-- Events tab -->
+            <div class="tab-panel" id="tab-events">
+                <div class="section-header">
+                    <h2 class="section-title">Events</h2>
+                    <button class="btn-create" onclick="openCreateEventModal()">+ Create Event</button>
+                </div>
+
+                <div id="eventList" class="tenant-list">
+                    <div class="loading">Loading events...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Event Modal -->
+    <div id="createEventModal" class="modal-overlay" onclick="if(event.target===this)closeCreateEventModal()">
+        <div class="modal">
+            <h2 class="modal-title">Create Event</h2>
+            <form id="createEventForm">
+                <div class="form-group">
+                    <label class="form-label">Restaurant (Tenant)</label>
+                    <select id="eventTenantId" class="form-input" required></select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Event Name</label>
+                    <input type="text" id="eventName" class="form-input" placeholder="e.g. Chef Edwin's Birthday" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Event Date (optional)</label>
+                    <input type="date" id="eventDate" class="form-input">
+                </div>
+                <p id="createEventError" class="error-msg" style="display:none;"></p>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeCreateEventModal()">Cancel</button>
+                    <button type="submit" class="btn-submit" id="createEventBtn">Create Event</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Event Detail Modal -->
+    <div id="eventDetailModal" class="modal-overlay" onclick="if(event.target===this)closeEventDetailModal()">
+        <div class="modal qr-detail">
+            <h2 class="modal-title" id="eventDetailName">Event</h2>
+            <p class="qr-detail-meta">
+                <span id="eventDetailDate"></span><br>
+                <span id="eventDetailStatus"></span>
+            </p>
+
+            <div id="eventQrOutput"></div>
+
+            <p class="qr-detail-meta" id="eventQrUrl"></p>
+
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeEventDetailModal()">Close</button>
+                <button type="button" class="btn-danger" id="eventDeactivateBtn" onclick="deactivateCurrentEvent()">Deactivate</button>
+                <button type="button" class="btn-submit" onclick="downloadEventQR()">Download PNG</button>
             </div>
         </div>
     </div>
@@ -917,6 +1081,256 @@
             } else if (img) {
                 link.href = img.src;
                 link.click();
+            }
+        }
+
+        // ================== EVENTS TAB ==================
+
+        // Active = 'active', anything else (currently 'inactive') is rendered as inactive.
+        const EVENT_STATUS_ACTIVE = 'active';
+        let currentEventDetail = null;
+
+        function switchTab(name) {
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(`tab-${name}`).classList.add('active');
+            document.getElementById(`tab-btn-${name}`).classList.add('active');
+
+            if (name === 'events') {
+                loadEvents();
+            }
+        }
+
+        async function loadEvents() {
+            const listEl = document.getElementById('eventList');
+            listEl.innerHTML = '<div class="loading">Loading events...</div>';
+
+            try {
+                const res = await fetch('/api/platform/events', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await res.json();
+
+                if (!data.success) {
+                    listEl.innerHTML = `<div class="error-msg">${escapeHtml(data.error || 'Failed to load events')}</div>`;
+                    return;
+                }
+
+                if (!data.data || data.data.length === 0) {
+                    listEl.innerHTML = `
+                        <div class="empty-state">
+                            <p>No events yet. Create your first event.</p>
+                            <button class="btn-create" onclick="openCreateEventModal()">+ Create Event</button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                listEl.innerHTML = data.data.map(ev => {
+                    const isActive = ev.status === EVENT_STATUS_ACTIVE;
+                    return `
+                    <div class="event-card" onclick="openEventDetail('${ev.id}')">
+                        <div class="event-info">
+                            <h3>${escapeHtml(ev.name)}</h3>
+                            <span class="tenant-slug">/event/${escapeHtml(ev.slug)}</span>
+                            <div class="event-meta">
+                                <span>${ev.date ? escapeHtml(new Date(ev.date).toLocaleDateString()) : 'No date set'}</span>
+                                <span>${ev.tenantName ? 'Restaurant: ' + escapeHtml(ev.tenantName) : ''}</span>
+                            </div>
+                        </div>
+                        <div class="event-actions">
+                            <span class="status-badge ${isActive ? 'active' : 'inactive'}">${isActive ? 'Active' : 'Inactive'}</span>
+                            <button class="btn-toggle" onclick="event.stopPropagation(); openEventDetail('${ev.id}')">View QR</button>
+                        </div>
+                    </div>
+                `;
+                }).join('');
+            } catch (error) {
+                listEl.innerHTML = `<div class="error-msg">Failed to load events</div>`;
+            }
+        }
+
+        async function openCreateEventModal() {
+            const modal = document.getElementById('createEventModal');
+            const tenantSelect = document.getElementById('eventTenantId');
+            const errorEl = document.getElementById('createEventError');
+
+            errorEl.style.display = 'none';
+            document.getElementById('createEventForm').reset();
+
+            tenantSelect.innerHTML = '<option value="">Loading tenants...</option>';
+            modal.classList.add('active');
+
+            // Always fetch fresh — cheap, and avoids stale data after a tenant
+            // is created in the Restaurants tab during the same session.
+            let tenants = [];
+            try {
+                const res = await fetch('/api/platform/tenants', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await res.json();
+                if (data.success) tenants = (data.data || []).filter(t => t.isActive);
+            } catch (e) { /* leave empty */ }
+
+            if (tenants.length === 0) {
+                tenantSelect.innerHTML = '<option value="">No tenants available</option>';
+                return;
+            }
+
+            tenantSelect.innerHTML = '<option value="">Select a restaurant…</option>' +
+                tenants.map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
+        }
+
+        function closeCreateEventModal() {
+            document.getElementById('createEventModal').classList.remove('active');
+        }
+
+        document.getElementById('createEventForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('createEventBtn');
+            const errorEl = document.getElementById('createEventError');
+
+            const name = document.getElementById('eventName').value.trim();
+            const date = document.getElementById('eventDate').value || null;
+            const tenantId = document.getElementById('eventTenantId').value;
+
+            if (!name) {
+                errorEl.textContent = 'Event name is required.';
+                errorEl.style.display = 'block';
+                return;
+            }
+            if (!tenantId) {
+                errorEl.textContent = 'Please select a restaurant.';
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Creating...';
+            errorEl.style.display = 'none';
+
+            try {
+                const res = await fetch('/api/platform/events', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, date, tenantId })
+                });
+                const data = await res.json();
+
+                if (!data.success) {
+                    errorEl.textContent = data.error || 'Failed to create event';
+                    errorEl.style.display = 'block';
+                    btn.disabled = false;
+                    btn.textContent = 'Create Event';
+                    return;
+                }
+
+                closeCreateEventModal();
+                await loadEvents();
+                openEventDetail(data.data.id);
+            } catch (err) {
+                errorEl.textContent = 'Failed to create event';
+                errorEl.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Create Event';
+            }
+        });
+
+        async function openEventDetail(eventId) {
+            try {
+                const res = await fetch(`/api/platform/events/${eventId}`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await res.json();
+                if (!data.success) {
+                    alert(data.error || 'Failed to load event');
+                    return;
+                }
+                currentEventDetail = data.data;
+                const isActive = currentEventDetail.status === EVENT_STATUS_ACTIVE;
+
+                document.getElementById('eventDetailName').textContent = currentEventDetail.name;
+                document.getElementById('eventDetailDate').textContent = currentEventDetail.date
+                    ? `Date: ${new Date(currentEventDetail.date).toLocaleDateString()}`
+                    : 'No date set';
+                document.getElementById('eventDetailStatus').textContent = `Status: ${currentEventDetail.status}`;
+                document.getElementById('eventQrUrl').textContent = currentEventDetail.qrUrl || '';
+
+                const deactivateBtn = document.getElementById('eventDeactivateBtn');
+                deactivateBtn.textContent = isActive ? 'Deactivate' : 'Inactive';
+                deactivateBtn.disabled = !isActive;
+
+                // QR ≥ 300×300 per spec
+                const output = document.getElementById('eventQrOutput');
+                output.innerHTML = '';
+                new QRCode(output, {
+                    text: currentEventDetail.qrUrl || `${window.location.origin}/event/${currentEventDetail.slug}`,
+                    width: 320,
+                    height: 320,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff'
+                });
+
+                document.getElementById('eventDetailModal').classList.add('active');
+            } catch (e) {
+                alert('Failed to load event');
+            }
+        }
+
+        function closeEventDetailModal() {
+            document.getElementById('eventDetailModal').classList.remove('active');
+            // Drop the QR DOM so it doesn't linger in memory between opens.
+            const output = document.getElementById('eventQrOutput');
+            if (output) output.innerHTML = '';
+            currentEventDetail = null;
+        }
+
+        function downloadEventQR() {
+            if (!currentEventDetail) return;
+            const canvas = document.querySelector('#eventQrOutput canvas');
+            const img = document.querySelector('#eventQrOutput img');
+            const safeName = (currentEventDetail.name || 'event')
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-|-$/g, '');
+            const filename = `${safeName}-qr.png`;
+            const link = document.createElement('a');
+            link.download = filename;
+            if (canvas) {
+                link.href = canvas.toDataURL();
+                link.click();
+            } else if (img) {
+                link.href = img.src;
+                link.click();
+            }
+        }
+
+        async function deactivateCurrentEvent() {
+            if (!currentEventDetail) return;
+            if (!confirm(`Deactivate "${currentEventDetail.name}"? Guests scanning the QR will see an inactive message.`)) return;
+
+            try {
+                const res = await fetch(`/api/platform/events/${currentEventDetail.id}/status`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status: 'inactive' })
+                });
+                const data = await res.json();
+                if (!data.success) {
+                    alert(data.error || 'Failed to deactivate event');
+                    return;
+                }
+                closeEventDetailModal();
+                await loadEvents();
+            } catch (e) {
+                alert('Failed to deactivate event');
             }
         }
     </script>
