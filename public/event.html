@@ -568,7 +568,7 @@
                 }
                 listEl.innerHTML = state.menuItems.map(item => `
                     <div class="menu-item">
-                        ${item.imageUrl ? `<img class="menu-item-image" src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.name)}" loading="lazy" onerror="this.style.display='none'">` : ''}
+                        ${item.imageUrl ? `<img class="menu-item-image" src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.name)}" onerror="this.style.display='none'">` : ''}
                         <div class="menu-item-body">
                             <div class="menu-item-content">
                                 <div class="menu-item-name">${escapeHtml(item.name)}</div>
