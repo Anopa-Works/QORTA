@@ -18,6 +18,7 @@ const Event = require('../models/Event');
 const { EVENT_STATUS } = Event;
 const Order = require('../models/Order');
 const MenuItem = require('../models/MenuItem');
+const Category = require('../models/Category');
 const { getDb, COLLECTIONS } = require('../config/firebase');
 const { ORDER_TYPE, ORDER_CATEGORY } = require('../config/constants');
 const { calculateSubtotal, calculateTax, calculateTotal, formatOrderForKitchen } = require('../utils/orderUtils');
@@ -86,8 +87,13 @@ router.get('/:slug/menu', async (req, res) => {
         const event = await loadActiveEvent(req, res);
         if (!event) return;
 
-        const items = await MenuItem.findByTenant(event.tenantId);
-        const sanitized = items.map(item => ({
+        // Fetch categories and menu items in parallel
+        const [items, categories] = await Promise.all([
+            MenuItem.findByTenant(event.tenantId),
+            Category.findByTenant(event.tenantId)
+        ]);
+
+        const sanitizedItems = items.map(item => ({
             id: item.id,
             name: item.name,
             description: item.description,
@@ -95,7 +101,14 @@ router.get('/:slug/menu', async (req, res) => {
             imageUrl: item.imageUrl
         }));
 
-        res.json({ success: true, data: sanitized });
+        const sanitizedCategories = categories.map(cat => ({
+            id: cat.id,
+            name: cat.name,
+            slug: cat.slug,
+            order: cat.order
+        }));
+
+        res.json({ success: true, data: { categories: sanitizedCategories, items: sanitizedItems } });
     } catch (error) {
         logger.error('Failed to fetch event menu', {
             requestId: req.requestId,

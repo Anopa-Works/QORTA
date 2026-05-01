@@ -169,6 +169,135 @@
             cursor: not-allowed;
         }
 
+        /* ================== CATEGORY GRID ================== */
+        #screen-categories {
+            background: #F0EEE9;
+            color: #333333;
+            display: none;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        #screen-categories.active { display: flex; }
+
+        .cat-grid-header {
+            background: #333333;
+            color: #fff;
+            padding: 20px 20px 16px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .cat-grid-event-name {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 24px;
+            letter-spacing: 1.5px;
+            line-height: 1.1;
+            margin-bottom: 4px;
+        }
+        .cat-grid-seat {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            color: #08C0E4;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .cat-grid-title {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 18px;
+            font-weight: 600;
+            color: #555;
+            padding: 20px 16px 8px;
+            text-align: center;
+            letter-spacing: 0.3px;
+        }
+        .cat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            padding: 12px 16px 80px;
+        }
+        .cat-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 28px 16px;
+            text-align: center;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+        .cat-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: #08C0E4;
+            transform: scaleX(0);
+            transition: transform 0.2s ease;
+        }
+        .cat-card:active { transform: scale(0.97); }
+        .cat-card:hover::after { transform: scaleX(1); }
+        .cat-card-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+            display: block;
+        }
+        .cat-card-name {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            color: #333333;
+            letter-spacing: 0.3px;
+        }
+        .cat-card-count {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+            font-weight: 500;
+        }
+
+        /* Back button in menu header */
+        .menu-back-btn {
+            background: none;
+            border: none;
+            color: #08C0E4;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 6px 0;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            letter-spacing: 0.3px;
+            transition: opacity 0.15s;
+        }
+        .menu-back-btn:active { opacity: 0.6; }
+        .menu-back-btn svg {
+            width: 16px;
+            height: 16px;
+            stroke: #08C0E4;
+            stroke-width: 2.5;
+            fill: none;
+        }
+
+        /* Category label in menu header */
+        .menu-category-label {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 12px;
+            color: #08C0E4;
+            font-weight: 500;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+
         /* ================== MENU ================== */
         #screen-menu {
             background: #F0EEE9;
@@ -371,11 +500,28 @@
         <button id="seatContinueBtn" class="btn-continue" type="button">Continue</button>
     </section>
 
-    <!-- Menu -->
+    <!-- Category Grid -->
+    <section class="screen" id="screen-categories">
+        <header class="cat-grid-header">
+            <h1 class="cat-grid-event-name" id="catEventName"></h1>
+            <div class="cat-grid-seat" id="catSeat"></div>
+        </header>
+        <p class="cat-grid-title">What are you looking for?</p>
+        <div class="cat-grid" id="catGrid">
+            <div class="menu-empty">Loading categories…</div>
+        </div>
+    </section>
+
+    <!-- Menu (filtered by category) -->
     <section class="screen" id="screen-menu">
         <header class="menu-header">
+            <button class="menu-back-btn" id="menuBackBtn" type="button">
+                <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                Categories
+            </button>
             <h1 class="menu-event-name" id="menuEventName"></h1>
             <div class="menu-seat" id="menuSeat"></div>
+            <div class="menu-category-label" id="menuCategoryLabel"></div>
         </header>
         <div class="menu-list" id="menuList">
             <div class="menu-empty">Loading menu…</div>
@@ -400,13 +546,13 @@
 
     <script>
         (function () {
-            // Resolve slug from URL: /event/<slug>
             const pathParts = window.location.pathname.split('/').filter(Boolean);
             const slug = pathParts[1] || '';
 
             const screens = {
                 loading: document.getElementById('screen-loading'),
                 seat: document.getElementById('screen-seat'),
+                categories: document.getElementById('screen-categories'),
                 menu: document.getElementById('screen-menu'),
                 inactive: document.getElementById('screen-inactive'),
                 notFound: document.getElementById('screen-not-found')
@@ -417,9 +563,44 @@
             const state = {
                 event: null,
                 seatReference: null,
+                categories: [],
                 menuItems: [],
                 placing: false
             };
+
+            // Default icons by common category keywords
+            const CATEGORY_ICONS = {
+                drink: '🥤', drinks: '🥤', beverage: '🥤', beverages: '🥤',
+                cocktail: '🍸', cocktails: '🍸', wine: '🍷', beer: '🍺',
+                burger: '🍔', burgers: '🍔',
+                pizza: '🍕', pizzas: '🍕',
+                chicken: '🍗', wings: '🍗',
+                steak: '🥩', meat: '🥩', grill: '🥩',
+                salad: '🥗', salads: '🥗',
+                dessert: '🍰', desserts: '🍰', sweet: '🍰',
+                breakfast: '🥞', brunch: '🥞',
+                seafood: '🦐', fish: '🐟', sushi: '🍣',
+                pasta: '🍝', noodle: '🍜', noodles: '🍜',
+                side: '🍟', sides: '🍟', fries: '🍟',
+                sandwich: '🥪', sandwiches: '🥪', wrap: '🌯', wraps: '🌯',
+                soup: '🍲', soups: '🍲',
+                coffee: '☕', tea: '🍵', hot: '☕',
+                juice: '🧃', smoothie: '🥤',
+                starter: '🥟', starters: '🥟', appetizer: '🥟',
+                main: '🍽️', mains: '🍽️', entree: '🍽️',
+                kids: '🧒', kid: '🧒',
+                vegan: '🌱', vegetarian: '🥬',
+                snack: '🍿', snacks: '🍿',
+                special: '⭐', specials: '⭐', combo: '🎯', combos: '🎯'
+            };
+
+            function getCategoryIcon(name) {
+                const lower = (name || '').toLowerCase();
+                for (const [key, icon] of Object.entries(CATEGORY_ICONS)) {
+                    if (lower.includes(key)) return icon;
+                }
+                return '🍽️';
+            }
 
             function escapeHtml(text) {
                 const div = document.createElement('div');
@@ -432,29 +613,19 @@
                 if (screens[name]) screens[name].classList.add('active');
             }
 
-            // -------- Loading -> fetch event --------
+            // -------- Loading → fetch event --------
             async function init() {
                 show('loading');
-                if (!slug) {
-                    show('notFound');
-                    return;
-                }
+                if (!slug) { show('notFound'); return; }
 
-                // Minimum display time so the loader doesn't flash
                 const minWait = new Promise(r => setTimeout(r, 800));
-
                 try {
                     const resp = await fetch(`/api/events/${encodeURIComponent(slug)}`);
                     const data = await resp.json().catch(() => ({}));
                     await minWait;
 
-                    if (resp.status === 404 || !data || !data.success) {
-                        show('notFound');
-                        return;
-                    }
-
+                    if (resp.status === 404 || !data || !data.success) { show('notFound'); return; }
                     if (data.data.inactive || data.data.status === 'inactive') {
-                        // Show event name briefly on loading screen first, then transition
                         document.getElementById('loaderEventName').textContent = data.data.name || 'Event';
                         show('inactive');
                         return;
@@ -462,8 +633,6 @@
 
                     state.event = data.data;
                     document.getElementById('loaderEventName').textContent = state.event.name;
-
-                    // Brief moment on loading with name resolved before going to seat input
                     setTimeout(() => goToSeat(), 600);
                 } catch (e) {
                     await minWait;
@@ -484,12 +653,8 @@
                 updateSeatPreview();
             }
 
-            function sanitizeSeatNumber(v) {
-                return String(v || '').replace(/[^0-9]/g, '').slice(0, 3);
-            }
-            function sanitizeSeatLetter(v) {
-                return String(v || '').replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 1);
-            }
+            function sanitizeSeatNumber(v) { return String(v || '').replace(/[^0-9]/g, '').slice(0, 3); }
+            function sanitizeSeatLetter(v) { return String(v || '').replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 1); }
             function currentSeat() {
                 const n = sanitizeSeatNumber(seatNumberEl.value);
                 const l = sanitizeSeatLetter(seatLetterEl.value);
@@ -497,23 +662,15 @@
             }
             function updateSeatPreview() {
                 const { n, l, full } = currentSeat();
-                if (full) {
-                    seatPreviewEl.textContent = full;
-                    seatPreviewEl.classList.remove('empty');
-                } else {
-                    seatPreviewEl.textContent = n || l ? `${n || '_'}-${l || '_'}` : '—';
-                    seatPreviewEl.classList.add('empty');
-                }
+                if (full) { seatPreviewEl.textContent = full; seatPreviewEl.classList.remove('empty'); }
+                else { seatPreviewEl.textContent = n || l ? `${n || '_'}-${l || '_'}` : '—'; seatPreviewEl.classList.add('empty'); }
                 seatValidationEl.textContent = '';
             }
 
             seatNumberEl.addEventListener('input', () => {
                 seatNumberEl.value = sanitizeSeatNumber(seatNumberEl.value);
                 updateSeatPreview();
-                // Auto-jump to letter once 2 digits typed (covers seats up to 99)
-                if (seatNumberEl.value.length >= 2 && seatLetterEl.value === '') {
-                    seatLetterEl.focus();
-                }
+                if (seatNumberEl.value.length >= 2 && seatLetterEl.value === '') seatLetterEl.focus();
             });
             seatLetterEl.addEventListener('input', () => {
                 seatLetterEl.value = sanitizeSeatLetter(seatLetterEl.value);
@@ -522,51 +679,131 @@
 
             seatContinueBtn.addEventListener('click', () => {
                 const { n, l, full } = currentSeat();
-                if (!n || !l) {
-                    seatValidationEl.textContent = 'Please enter both seat number and location.';
-                    return;
-                }
-                if (parseInt(n, 10) < 1) {
-                    seatValidationEl.textContent = 'Seat number must be 1 or higher.';
-                    return;
-                }
+                if (!n || !l) { seatValidationEl.textContent = 'Please enter both seat number and location.'; return; }
+                if (parseInt(n, 10) < 1) { seatValidationEl.textContent = 'Seat number must be 1 or higher.'; return; }
                 state.seatReference = full;
-                goToMenu();
+                goToCategories();
             });
 
-            // -------- Menu --------
-            async function goToMenu() {
-                show('menu');
-                document.getElementById('menuEventName').textContent = state.event.name;
-                document.getElementById('menuSeat').textContent = `Seat ${state.seatReference}`;
-                await loadMenu();
+            // -------- Categories screen --------
+            async function goToCategories() {
+                show('categories');
+                document.getElementById('catEventName').textContent = state.event.name;
+                document.getElementById('catSeat').textContent = `Seat ${state.seatReference}`;
+                await loadMenuData();
             }
 
-            async function loadMenu() {
-                const listEl = document.getElementById('menuList');
-                listEl.innerHTML = '<div class="menu-empty">Loading menu…</div>';
+            async function loadMenuData() {
+                const gridEl = document.getElementById('catGrid');
+                gridEl.innerHTML = '<div class="menu-empty">Loading categories…</div>';
 
                 try {
                     const resp = await fetch(`/api/events/${encodeURIComponent(slug)}/menu`);
                     const data = await resp.json().catch(() => ({}));
                     if (!resp.ok || !data.success) {
-                        listEl.innerHTML = '<div class="menu-empty">Menu not available yet. Please ask your waiter.</div>';
+                        gridEl.innerHTML = '<div class="menu-empty">Menu not available yet. Please ask your waiter.</div>';
                         return;
                     }
-                    state.menuItems = data.data || [];
-                    renderMenu();
+
+                    // Handle both new {categories, items} and legacy flat array format
+                    if (Array.isArray(data.data)) {
+                        state.menuItems = data.data;
+                        state.categories = [];
+                    } else {
+                        state.categories = (data.data.categories || []).sort((a, b) => a.order - b.order);
+                        state.menuItems = data.data.items || [];
+                    }
+
+                    renderCategoryGrid();
                 } catch (e) {
-                    listEl.innerHTML = '<div class="menu-empty">Menu not available yet. Please ask your waiter.</div>';
+                    gridEl.innerHTML = '<div class="menu-empty">Menu not available yet. Please ask your waiter.</div>';
                 }
             }
 
-            function renderMenu() {
-                const listEl = document.getElementById('menuList');
-                if (!state.menuItems.length) {
-                    listEl.innerHTML = '<div class="menu-empty">Menu not available yet. Please ask your waiter.</div>';
+            function renderCategoryGrid() {
+                const gridEl = document.getElementById('catGrid');
+
+                // Count items per category
+                const countMap = {};
+                state.menuItems.forEach(item => {
+                    const cat = item.category || '__uncategorized__';
+                    countMap[cat] = (countMap[cat] || 0) + 1;
+                });
+
+                // If no categories defined, fall back to grouping by item.category strings
+                let cats = state.categories;
+                if (!cats.length) {
+                    const seen = new Set();
+                    state.menuItems.forEach(item => {
+                        if (item.category && !seen.has(item.category)) {
+                            seen.add(item.category);
+                            cats.push({ id: item.category, name: item.category, slug: item.category, order: seen.size });
+                        }
+                    });
+                }
+
+                if (!cats.length) {
+                    // No categories at all — skip straight to flat menu
+                    showFilteredMenu(null, 'All Items');
                     return;
                 }
-                listEl.innerHTML = state.menuItems.map(item => `
+
+                gridEl.innerHTML = cats.map(cat => {
+                    // Match by id or slug
+                    const count = countMap[cat.id] || countMap[cat.slug] || 0;
+                    const icon = getCategoryIcon(cat.name);
+                    return `
+                        <div class="cat-card" data-cat-id="${escapeHtml(cat.id)}" data-cat-slug="${escapeHtml(cat.slug)}" data-cat-name="${escapeHtml(cat.name)}">
+                            <span class="cat-card-icon">${icon}</span>
+                            <div class="cat-card-name">${escapeHtml(cat.name)}</div>
+                            ${count ? `<div class="cat-card-count">${count} item${count !== 1 ? 's' : ''}</div>` : ''}
+                        </div>
+                    `;
+                }).join('');
+
+                gridEl.querySelectorAll('.cat-card').forEach(card => {
+                    card.addEventListener('click', () => {
+                        const catId = card.dataset.catId;
+                        const catName = card.dataset.catName;
+                        showFilteredMenu(catId, catName);
+                    });
+                });
+            }
+
+            // -------- Menu (filtered by category) --------
+            function showFilteredMenu(categoryId, categoryName) {
+                show('menu');
+                document.getElementById('menuEventName').textContent = state.event.name;
+                document.getElementById('menuSeat').textContent = `Seat ${state.seatReference}`;
+                document.getElementById('menuCategoryLabel').textContent = categoryName || '';
+
+                // Show/hide back button
+                const backBtn = document.getElementById('menuBackBtn');
+                backBtn.style.display = categoryId !== null ? 'flex' : 'none';
+
+                // Filter items
+                let filtered;
+                if (categoryId === null) {
+                    filtered = state.menuItems;
+                } else {
+                    filtered = state.menuItems.filter(item => item.category === categoryId);
+                    // Also match by slug for backwards compatibility
+                    if (!filtered.length) {
+                        const cat = state.categories.find(c => c.id === categoryId);
+                        if (cat) filtered = state.menuItems.filter(item => item.category === cat.slug);
+                    }
+                }
+
+                renderMenu(filtered);
+            }
+
+            function renderMenu(items) {
+                const listEl = document.getElementById('menuList');
+                if (!items || !items.length) {
+                    listEl.innerHTML = '<div class="menu-empty">No items in this category yet.</div>';
+                    return;
+                }
+                listEl.innerHTML = items.map(item => `
                     <div class="menu-item">
                         ${item.imageUrl ? `<img class="menu-item-image" src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.name)}">` : ''}
                         <div class="menu-item-body">
@@ -584,20 +821,21 @@
                 });
             }
 
+            // Back button → return to category grid
+            document.getElementById('menuBackBtn').addEventListener('click', () => {
+                show('categories');
+                window.scrollTo(0, 0);
+            });
+
             // -------- Place order (optimistic + 3s debounce) --------
             async function placeOrder(itemId, btnEl) {
                 if (state.placing) return;
                 state.placing = true;
 
-                // Disable the tapped button (and all SELECT buttons) for 3 seconds — debounce.
                 const allBtns = document.querySelectorAll('.btn-select');
                 allBtns.forEach(b => { b.disabled = true; });
-                setTimeout(() => {
-                    allBtns.forEach(b => { b.disabled = false; });
-                    state.placing = false;
-                }, 3000);
+                setTimeout(() => { allBtns.forEach(b => { b.disabled = false; }); state.placing = false; }, 3000);
 
-                // Optimistic confirmation
                 showOverlay(confirmOverlay);
 
                 try {
@@ -607,10 +845,7 @@
                         body: JSON.stringify({ itemId, seatReference: state.seatReference })
                     });
                     const data = await resp.json().catch(() => ({}));
-                    if (!resp.ok || !data.success) {
-                        throw new Error(data.error || 'order_failed');
-                    }
-                    // Hide confirmation after a short pause so guest reads it
+                    if (!resp.ok || !data.success) throw new Error(data.error || 'order_failed');
                     setTimeout(() => hideOverlay(confirmOverlay), 2400);
                 } catch (e) {
                     hideOverlay(confirmOverlay);
